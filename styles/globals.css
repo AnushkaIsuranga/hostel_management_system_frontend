@@ -1,0 +1,155 @@
+@import 'tailwindcss';
+
+:root {
+  /* Light, warm palette defaults */
+  --background: #fffaf3; /* soft warm white */
+  --foreground: #3b2f1e; /* deep brown text */
+  --surface: #ffffff; /* cards/surfaces */
+  --accent: #b45309; /* amber-700 */
+  --accent-100: #fde68a; /* amber-200 */
+  --border: #f5d7a1; /* light amber border */
+  --muted: #6b7280; /* neutral text */
+}
+
+/* Removed @theme (not recognized by current tooling). If using Tailwind CSS v4 design tokens, this can move to tailwind config instead. */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Utility classes to keep components clean and consistent */
+.surface-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem; /* ~rounded-2xl */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.accent-btn {
+  background: var(--accent);
+  color: #ffffff;
+  border-radius: 0.75rem; /* ~rounded-xl */
+  transition:
+    opacity 0.2s ease,
+    transform 0.05s ease;
+}
+.accent-btn:hover {
+  opacity: 0.95;
+}
+.accent-btn:active {
+  transform: translateY(1px);
+}
+.accent-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.accent-tag {
+  background: var(--accent-100);
+  color: var(--accent);
+  border-radius: 9999px; /* pill */
+}
+
+.input-base {
+  background: transparent;
+  color: var(--foreground);
+  border: 0;
+  outline: none;
+}
+.input-base::placeholder {
+  color: var(--muted);
+  opacity: 0.9;
+}
+
+.border-var {
+  border-color: var(--border) !important;
+}
+.muted {
+  color: var(--muted);
+}
+.accent {
+  color: var(--accent);
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.badge {
+  border-radius: 9999px;
+  padding: 0.25rem 0.5rem; /* px-2 py-1 */
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 600;
+}
+
+.chip {
+  border-radius: 9999px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.overlay-enter {
+  animation: overlay-fade-in 200ms ease-out both;
+}
+
+.drawer-enter {
+  animation: slide-in-right 250ms ease-out both;
+}
+
+.overlay-exit {
+  animation: overlay-fade-out 180ms ease-in both;
+}
+
+.drawer-exit {
+  animation: slide-out-right 220ms ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay-enter,
+  .drawer-enter,
+  .overlay-exit,
+  .drawer-exit {
+    animation: none;
+  }
+}
