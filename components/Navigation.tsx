@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 import type { NavItem, NavProps, User, UserRole } from '../types'
+import { getAccessToken, getStoredEmail, getStoredRole } from '@/lib/auth'
 
 const defaultUser: User = {
   id: 'guest-1',
@@ -13,96 +14,23 @@ const defaultUser: User = {
   role: 'guest',
 }
 
-const mockStudentUser: User = {
-  id: 'student-1',
-  name: 'Tharaka Silva',
-  email: 'tharaka@example.com',
-  role: 'student',
-  university: 'University of Colombo',
-}
-
 // Navigation items based on roles
 const navItems: NavItem[] = [
-  // Public items (visible to all)
-  {
-    name: 'Home',
-    href: '/',
-    roles: ['guest', 'student', 'hostel_owner', 'admin'],
-  },
   {
     name: 'Find Hostels',
     href: '/hostels',
     roles: ['guest', 'student', 'hostel_owner', 'admin'],
     isPrimary: true,
   },
-  {
-    name: 'Universities',
-    href: '/universities',
-    roles: ['guest', 'student', 'hostel_owner', 'admin'],
-  },
-
-  // Student-specific items
-  {
-    name: 'My Bookings',
-    href: '/student/bookings',
-    roles: ['student', 'admin'],
-  },
-  {
-    name: 'Saved Hostels',
-    href: '/student/saved',
-    roles: ['student', 'admin'],
-  },
-
-  // Hostel owner-specific items
-  {
-    name: 'Dashboard',
-    href: '/owner/dashboard',
-    roles: ['hostel_owner', 'admin'],
-  },
-  {
-    name: 'Listings',
-    href: '/owner/listings',
-    roles: ['hostel_owner', 'admin'],
-  },
-  {
-    name: 'Bookings',
-    href: '/owner/bookings',
-    roles: ['hostel_owner', 'admin'],
-  },
-
-  // Admin-specific items
-  {
-    name: 'Admin Panel',
-    href: '/admin',
-    roles: ['admin'],
-  },
-  {
-    name: 'Users',
-    href: '/admin/users',
-    roles: ['admin'],
-  },
-  {
-    name: 'Verifications',
-    href: '/admin/verifications',
-    roles: ['admin'],
-  },
 ]
 
-// Role-based user menu items
 const userMenuItems: Record<UserRole, NavItem[]> = {
-  student: [
-    { name: 'Profile', href: '/student/profile', roles: ['student'] },
-    { name: 'Settings', href: '/student/settings', roles: ['student'] },
-  ],
-  hostel_owner: [
-    { name: 'Profile', href: '/owner/profile', roles: ['hostel_owner'] },
-    { name: 'Settings', href: '/owner/settings', roles: ['hostel_owner'] },
-    { name: 'Earnings', href: '/owner/earnings', roles: ['hostel_owner'] },
-  ],
+  student: [{ name: 'Users', href: '/user', roles: ['student'] }],
+  hostel_owner: [{ name: 'Users', href: '/user', roles: ['hostel_owner'] }],
   admin: [
-    { name: 'Profile', href: '/admin/profile', roles: ['admin'] },
-    { name: 'System Settings', href: '/admin/settings', roles: ['admin'] },
-    { name: 'Analytics', href: '/admin/analytics', roles: ['admin'] },
+    { name: 'Dashboard', href: '/admin/dashboard', roles: ['admin'] },
+    { name: 'Hostels', href: '/admin/hostels', roles: ['admin'] },
+    { name: 'Users', href: '/admin/users', roles: ['admin'] },
   ],
   guest: [],
 }
@@ -115,13 +43,27 @@ export default function Navigation({
   className = '',
   showUserMenu = true,
 }: NavProps) {
-  const [internalUser, setInternalUser] = useState<User>(defaultUser)
+  const router = useRouter()
+  const [internalUser, setInternalUser] = useState<User>(() => {
+    const token = getAccessToken()
+    if (!token) return defaultUser
+
+    const roleNum = getStoredRole()
+    const role: UserRole = roleNum === 2 ? 'admin' : roleNum === 1 ? 'hostel_owner' : 'student'
+
+    const email = getStoredEmail() ?? 'user@example.com'
+    const name = email.includes('@') ? email.split('@')[0] : email
+
+    return {
+      ...defaultUser,
+      id: 'session',
+      name,
+      email,
+      role,
+    }
+  })
 
   const effectiveUser = currentUser ?? internalUser
-
-  const handleLogin = onLogin ?? (() => setInternalUser(mockStudentUser))
-  const handleSignup = onSignup ?? (() => setInternalUser(mockStudentUser))
-  const handleLogout = onLogout ?? (() => setInternalUser(defaultUser))
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -129,6 +71,30 @@ export default function Navigation({
   const pathname = usePathname()
 
   const isHostelsPage = pathname.startsWith('/hostels')
+
+  const nextPath = useMemo(() => {
+    const p = pathname || '/'
+    return encodeURIComponent(p)
+  }, [pathname])
+
+  const handleLogin =
+    onLogin ??
+    (() => {
+      router.push(`/login?next=${nextPath}`)
+    })
+
+  const handleSignup =
+    onSignup ??
+    (() => {
+      router.push(`/signup?next=${nextPath}`)
+    })
+
+  const handleLogout =
+    onLogout ??
+    (() => {
+      setInternalUser(defaultUser)
+      router.push('/logout')
+    })
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50)
@@ -138,17 +104,16 @@ export default function Navigation({
 
   useEffect(() => {
     // Close mobile menu on route change
-    setIsMenuOpen(false)
-    setIsUserMenuOpen(false)
+    const t = setTimeout(() => {
+      setIsMenuOpen(false)
+      setIsUserMenuOpen(false)
+    }, 0)
+
+    return () => clearTimeout(t)
   }, [pathname])
 
-  // Filter navigation items based on user role
   const filteredNavItems = navItems.filter((item) => item.roles.includes(effectiveUser.role))
-
-  // Get user menu items based on role
   const currentUserMenuItems = userMenuItems[effectiveUser.role] || []
-
-  // Determine if user is authenticated
   const isAuthenticated = effectiveUser.role !== 'guest'
 
   const getInitials = (name: string): string => {
@@ -195,17 +160,14 @@ export default function Navigation({
       >
         <div className="mx-auto max-w-5/6 px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
-            {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-700">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-amber-500 to-amber-700">
                 <span className="text-xl font-bold text-white">H</span>
               </div>
               <span className="text-2xl font-bold text-amber-800">UniHostel</span>
             </Link>
 
-            {/* Desktop Navigation */}
             <div className="hidden items-center gap-6 md:flex">
-              {/* Navigation Links */}
               {filteredNavItems
                 .filter((item) => !item.isPrimary)
                 .map((item) => (
@@ -220,7 +182,6 @@ export default function Navigation({
                   </Link>
                 ))}
 
-              {/* Primary Action Button */}
               {filteredNavItems
                 .filter((item) => item.isPrimary && !isHostelsPage)
                 .map((item) => (
@@ -233,7 +194,6 @@ export default function Navigation({
                   </Link>
                 ))}
 
-              {/* User Menu */}
               {showUserMenu && (
                 <div className="relative ml-4">
                   {isAuthenticated ? (
@@ -249,6 +209,7 @@ export default function Navigation({
                             )}`}
                           >
                             {effectiveUser.avatar ? (
+                              // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={effectiveUser.avatar}
                                 alt={effectiveUser.name}
@@ -272,10 +233,8 @@ export default function Navigation({
                         </div>
                       </button>
 
-                      {/* User Dropdown Menu */}
                       {isUserMenuOpen && (
                         <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-gray-200 bg-white py-2 shadow-lg">
-                          {/* User Info */}
                           <div className="border-b border-gray-100 px-4 py-3">
                             <p className="text-sm font-medium text-gray-900">
                               {effectiveUser.name}
@@ -286,7 +245,6 @@ export default function Navigation({
                             </p>
                           </div>
 
-                          {/* Menu Items */}
                           {currentUserMenuItems.map((item) => (
                             <Link
                               key={item.href}
@@ -297,7 +255,6 @@ export default function Navigation({
                             </Link>
                           ))}
 
-                          {/* Logout Button */}
                           <div className="mt-2 border-t border-gray-100 pt-2">
                             <button
                               onClick={handleLogout}
@@ -329,7 +286,6 @@ export default function Navigation({
               )}
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               className="p-2 md:hidden"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -342,9 +298,7 @@ export default function Navigation({
                   }`}
                 ></span>
                 <span
-                  className={`h-0.5 w-full bg-gray-800 transition-all ${
-                    isMenuOpen ? 'opacity-0' : ''
-                  }`}
+                  className={`h-0.5 w-full bg-gray-800 transition-all ${isMenuOpen ? 'opacity-0' : ''}`}
                 ></span>
                 <span
                   className={`h-0.5 w-full bg-gray-800 transition-all ${
@@ -357,11 +311,9 @@ export default function Navigation({
         </div>
       </nav>
 
-      {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="fixed inset-x-0 top-20 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto border-t border-amber-100 bg-white md:hidden">
           <div className="space-y-1 px-4 py-4">
-            {/* Navigation Links */}
             {filteredNavItems
               .filter((item) => !item.isPrimary)
               .map((item) => (
@@ -376,7 +328,6 @@ export default function Navigation({
                 </Link>
               ))}
 
-            {/* Primary Action */}
             {filteredNavItems
               .filter((item) => item.isPrimary && !isHostelsPage)
               .map((item) => (
@@ -389,7 +340,6 @@ export default function Navigation({
                 </Link>
               ))}
 
-            {/* User Section (Mobile) */}
             {showUserMenu && (
               <div className="mt-4 border-t border-gray-100 pt-4">
                 {isAuthenticated ? (
@@ -401,6 +351,7 @@ export default function Navigation({
                         )}`}
                       >
                         {effectiveUser.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={effectiveUser.avatar}
                             alt={effectiveUser.name}
@@ -455,7 +406,6 @@ export default function Navigation({
         </div>
       )}
 
-      {/* Backdrop for mobile menu */}
       {isMenuOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/20 md:hidden"
@@ -466,19 +416,15 @@ export default function Navigation({
   )
 }
 
-// Helper hook for using the navigation component with authentication
 export function useNav() {
   const [user, setUser] = useState<User | null>(null)
 
-  // Mock authentication functions - replace with actual auth logic
   const login = (userData: User) => {
     setUser(userData)
-    // In a real app, you would also set cookies/localStorage
   }
 
   const logout = () => {
     setUser(null)
-    // In a real app, you would also clear cookies/localStorage
   }
 
   return {

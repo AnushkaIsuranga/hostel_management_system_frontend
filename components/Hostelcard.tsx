@@ -1,12 +1,14 @@
 import React from 'react'
 import Link from 'next/link'
-import { Hostel } from '@/types'
+import Image from 'next/image'
+import type { HostelReadDto } from '@/types/backend'
+import { ApiHostelStatus } from '@/types/backend'
 
-import { FaCheck, FaGraduationCap, FaHeart, FaHome, FaRegHeart, FaStar } from 'react-icons/fa'
-import { FiMapPin } from 'react-icons/fi'
+import { FaHeart, FaHome, FaRegHeart } from 'react-icons/fa'
+import { FiExternalLink, FiMapPin } from 'react-icons/fi'
 
 interface HostelCardProps {
-  hostel: Hostel
+  hostel: HostelReadDto
   onSave?: (hostelId: string) => void
   isSaved?: boolean
 }
@@ -25,32 +27,36 @@ export default function HostelCard({ hostel, onSave, isSaved = false }: HostelCa
       minimumFractionDigits: 0,
     }).format(price)
 
-  const roomTypeLabel: Record<string, string> = {
-    single: 'Single Room',
-    double: 'Double Sharing',
-    triple: 'Triple Sharing',
-    shared: 'Shared Room',
+  const formatPriceRange = (minPrice: number, maxPrice: number) => {
+    if (Number.isFinite(minPrice) && Number.isFinite(maxPrice) && minPrice === maxPrice) {
+      return formatPrice(minPrice)
+    }
+    return `${formatPrice(minPrice)} – ${formatPrice(maxPrice)}`
   }
 
-  const genderColor: Record<string, string> = {
-    male: 'bg-blue-100 text-blue-700',
-    female: 'bg-pink-100 text-pink-700',
-    mixed: 'bg-purple-100 text-purple-700',
+  const statusLabel: Record<ApiHostelStatus, string> = {
+    [ApiHostelStatus.Pending]: 'Pending',
+    [ApiHostelStatus.Active]: 'Active',
+    [ApiHostelStatus.Disabled]: 'Disabled',
   }
+
+  const statusClasses: Record<ApiHostelStatus, string> = {
+    [ApiHostelStatus.Pending]: 'bg-amber-100 text-amber-800',
+    [ApiHostelStatus.Active]: 'bg-green-100 text-green-700',
+    [ApiHostelStatus.Disabled]: 'bg-gray-200 text-gray-700',
+  }
+
+  const primaryImage = hostel.images?.[0]
 
   return (
     <Link href={`/hostels/${hostel.id}`} className="group block h-full">
       <div className="surface-card relative flex h-full flex-col overflow-hidden transition-shadow duration-300 hover:shadow-xl">
         {/* Image */}
         <div className="relative h-48 bg-gray-100">
-          {hostel.images?.length ? (
-            <img
-              src={hostel.images[0]}
-              alt={hostel.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 group-hover:brightness-75"
-            />
+          {primaryImage ? (
+            <Image src={primaryImage} alt={hostel.name} fill className="object-cover" />
           ) : (
-            <div className="flex h-full items-center justify-center bg-gradient-to-br from-amber-100 to-amber-200">
+            <div className="flex h-full items-center justify-center bg-linear-to-br from-amber-100 to-amber-200">
               <FaHome className="text-6xl text-amber-700" />
             </div>
           )}
@@ -58,40 +64,35 @@ export default function HostelCard({ hostel, onSave, isSaved = false }: HostelCa
           {/* Hover Overlay */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 translate-y-4 opacity-0 transition-all duration-500 ease-out group-hover:translate-y-0 lg:group-hover:opacity-100">
             {/* Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-white via-white/80 to-transparent" />
 
             {/* Content */}
             <div className="relative space-y-2 p-4 text-sm text-black">
               <div className="flex items-center gap-2">
-                <FaGraduationCap className="text-amber-400" />
-                <span className="line-clamp-1">{hostel.university}</span>
-                <span className="opacity-60">•</span>
                 <FiMapPin />
-                <span>{hostel.distanceFromUniversity.toFixed(1)} km</span>
+                <span className="line-clamp-1">{hostel.city}</span>
               </div>
 
-              {hostel.amenities?.length > 0 && (
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {hostel.amenities.slice(0, 4).map((a, i) => (
-                    <span key={i} className="opacity-90">
-                      • {a}
-                    </span>
-                  ))}
-                  {hostel.amenities.length > 4 && (
-                    <span className="opacity-70">+{hostel.amenities.length - 4} more</span>
-                  )}
-                </div>
-              )}
+              <p className="line-clamp-2 text-xs text-gray-700">{hostel.description}</p>
 
-              {hostel.availableRooms === 0 && (
-                <p className="text-xs font-medium text-red-400">Fully booked</p>
+              {hostel.locationUrl && (
+                <div className="flex items-center gap-2 text-xs">
+                  <FiExternalLink />
+                  <span className="line-clamp-1">Open location</span>
+                </div>
               )}
             </div>
           </div>
 
-          {hostel.verified && (
-            <span className="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-green-500 px-3 py-1 text-xs text-white">
-              <FaCheck />
+          <span
+            className={`badge absolute top-3 left-3 ${statusClasses[hostel.status]}`}
+            title={`Status: ${statusLabel[hostel.status]}`}
+          >
+            {statusLabel[hostel.status]}
+          </span>
+
+          {hostel.isVerified && (
+            <span className="badge absolute top-3 left-24 bg-emerald-100 text-emerald-700">
               Verified
             </span>
           )}
@@ -121,36 +122,24 @@ export default function HostelCard({ hostel, onSave, isSaved = false }: HostelCa
             </p>
 
             <div className="hidden flex-wrap gap-2 text-xs lg:flex">
-              <span className={`chip ${genderColor[hostel.gender]}`}>{hostel.gender}</span>
-
-              <span className="chip bg-amber-100 text-amber-700">
-                {roomTypeLabel[hostel.roomType]}
-              </span>
-
-              {hostel.utilitiesIncluded && (
-                <span className="chip bg-green-100 text-green-700">Utilities Included</span>
+              {hostel.genderPolicy && (
+                <span className="chip bg-purple-100 text-purple-700">{hostel.genderPolicy}</span>
               )}
+              <span className="chip bg-amber-100 text-amber-700">
+                {formatPriceRange(hostel.minPrice, hostel.maxPrice)}
+              </span>
             </div>
 
             <div className="flex items-end justify-between pt-2">
               <div>
                 <p className="text-xl font-bold text-amber-700">
-                  {formatPrice(hostel.monthlyRent)}
+                  {formatPriceRange(hostel.minPrice, hostel.maxPrice)}
                 </p>
-                <p className="text-xs text-gray-500">per month</p>
+                <p className="text-xs text-gray-500">price range</p>
               </div>
 
               <div>
-                {hostel.rating > 0 && (
-                  <div className="flex items-center gap-1 text-sm">
-                    <FaStar className="text-amber-500" />
-                    <span className="font-semibold">{hostel.rating.toFixed(1)}</span>
-                    <span className="text-xs text-gray-500">({hostel.reviewCount})</span>
-                  </div>
-                )}
-                {hostel.availableRooms > 0 && (
-                  <span className="text-xs text-green-600">{hostel.availableRooms} room(s)</span>
-                )}
+                <span className="text-xs text-gray-500">ID: {hostel.id.slice(0, 8)}…</span>
               </div>
             </div>
           </div>

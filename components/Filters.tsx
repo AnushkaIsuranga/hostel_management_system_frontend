@@ -11,6 +11,57 @@ interface FiltersProps {
   onReset: () => void
 }
 
+function FilterSection({
+  title,
+  expanded,
+  onToggle,
+  children,
+}: {
+  title: string
+  expanded: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="mb-4 border-b border-gray-100 pb-4">
+      <button
+        onClick={onToggle}
+        className="mb-3 flex w-full items-center justify-between text-left"
+      >
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        <span className={`text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}>
+          <FiChevronDown aria-hidden="true" />
+        </span>
+      </button>
+      {expanded && <div className="space-y-3">{children}</div>}
+    </div>
+  )
+}
+
+function Checkbox({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean
+  onChange: () => void
+  label: string
+}) {
+  return (
+    <label className="group flex cursor-pointer items-center gap-2">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+      />
+      <span className="text-sm text-gray-700 transition-colors group-hover:text-amber-700">
+        {label}
+      </span>
+    </label>
+  )
+}
+
 const universities = [
   'University of Colombo',
   'University of Peradeniya',
@@ -96,55 +147,6 @@ export default function Filters({ filters, onFiltersChange, onReset }: FiltersPr
     onFiltersChange({ ...filters, amenities: newAmenities })
   }
 
-  const FilterSection = ({
-    title,
-    section,
-    children,
-  }: {
-    title: string
-    section: keyof typeof isExpanded
-    children: React.ReactNode
-  }) => (
-    <div className="mb-4 border-b border-gray-100 pb-4">
-      <button
-        onClick={() => toggleSection(section)}
-        className="mb-3 flex w-full items-center justify-between text-left"
-      >
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        <span
-          className={`text-gray-400 transition-transform ${
-            isExpanded[section] ? 'rotate-180' : ''
-          }`}
-        >
-          <FiChevronDown aria-hidden="true" />
-        </span>
-      </button>
-      {isExpanded[section] && <div className="space-y-3">{children}</div>}
-    </div>
-  )
-
-  const Checkbox = ({
-    checked,
-    onChange,
-    label,
-  }: {
-    checked: boolean
-    onChange: () => void
-    label: string
-  }) => (
-    <label className="group flex cursor-pointer items-center gap-2">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-      />
-      <span className="text-sm text-gray-700 transition-colors group-hover:text-amber-700">
-        {label}
-      </span>
-    </label>
-  )
-
   return (
     <div className="sticky top-24 rounded-xl border border-gray-200 bg-white p-6">
       {/* Header */}
@@ -161,7 +163,11 @@ export default function Filters({ filters, onFiltersChange, onReset }: FiltersPr
       {/* Filters Content */}
       <div className="space-y-4">
         {/* Location Filters */}
-        <FilterSection title="Location" section="location">
+        <FilterSection
+          title="Location"
+          expanded={isExpanded.location}
+          onToggle={() => toggleSection('location')}
+        >
           {/* University */}
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">University</label>
@@ -231,7 +237,11 @@ export default function Filters({ filters, onFiltersChange, onReset }: FiltersPr
         </FilterSection>
 
         {/* Price Range */}
-        <FilterSection title="Monthly Rent" section="price">
+        <FilterSection
+          title="Monthly Rent"
+          expanded={isExpanded.price}
+          onToggle={() => toggleSection('price')}
+        >
           <div className="space-y-3">
             <div className="flex gap-3">
               <div className="flex-1">
@@ -264,7 +274,11 @@ export default function Filters({ filters, onFiltersChange, onReset }: FiltersPr
         </FilterSection>
 
         {/* Room Type & Gender */}
-        <FilterSection title="Room Details" section="room">
+        <FilterSection
+          title="Room Details"
+          expanded={isExpanded.room}
+          onToggle={() => toggleSection('room')}
+        >
           {/* Room Type */}
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">Room Type</label>
@@ -316,7 +330,11 @@ export default function Filters({ filters, onFiltersChange, onReset }: FiltersPr
         </FilterSection>
 
         {/* Amenities */}
-        <FilterSection title="Amenities" section="amenities">
+        <FilterSection
+          title="Amenities"
+          expanded={isExpanded.amenities}
+          onToggle={() => toggleSection('amenities')}
+        >
           <div className="grid grid-cols-2 gap-2">
             {amenitiesList.map((amenity) => (
               <Checkbox
@@ -330,7 +348,11 @@ export default function Filters({ filters, onFiltersChange, onReset }: FiltersPr
         </FilterSection>
 
         {/* Other Filters */}
-        <FilterSection title="Other Options" section="other">
+        <FilterSection
+          title="Other Options"
+          expanded={isExpanded.other}
+          onToggle={() => toggleSection('other')}
+        >
           <Checkbox
             checked={filters.verifiedOnly}
             onChange={() =>

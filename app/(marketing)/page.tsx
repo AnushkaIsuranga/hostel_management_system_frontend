@@ -3,7 +3,6 @@
 import React from 'react'
 import AnimatedElement from '@/lib/animations/AnimatedElement'
 import { ParallaxElement } from '@/lib/animations/ParallaxElement'
-import Navigation from '@/components/Navigation'
 
 import {
   FaBolt,
@@ -126,7 +125,7 @@ export default function Page() {
               <AnimatedElement direction="up" duration={800} distance={30} delay={100}>
                 <h1 className="mb-6 text-5xl leading-tight font-bold text-gray-900 sm:text-6xl lg:text-7xl">
                   Find Your Perfect
-                  <span className="block bg-gradient-to-r from-amber-600 to-amber-800 bg-clip-text text-transparent">
+                  <span className="block bg-linear-to-r from-amber-600 to-amber-800 bg-clip-text text-transparent">
                     Student Hostel
                   </span>
                 </h1>
@@ -156,7 +155,7 @@ export default function Page() {
                     {[1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-bold text-white"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-linear-to-br from-amber-400 to-amber-600 text-sm font-bold text-white"
                       >
                         {String.fromCharCode(64 + i)}
                       </div>
@@ -179,7 +178,7 @@ export default function Page() {
                 <div className="relative">
                   {/* Main Image Card */}
                   <div className="surface-card rotate-2 transform p-2">
-                    <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-amber-100 to-amber-200">
+                    <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-linear-to-br from-amber-100 to-amber-200">
                       <div className="p-8 text-center">
                         <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-2xl bg-white shadow-lg">
                           <FaHome className="text-6xl text-amber-700" aria-hidden="true" />
@@ -213,7 +212,7 @@ export default function Page() {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-gradient-to-br from-amber-700 to-amber-900 px-4 py-16 sm:px-6 lg:px-8">
+      <section className="bg-linear-to-br from-amber-700 to-amber-900 px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
             {stats.map((stat, index) => (
@@ -285,7 +284,7 @@ export default function Page() {
               <AnimatedElement key={index} direction="up" duration={600} delay={index * 80}>
                 <div className="surface-card group cursor-pointer p-6 transition-all duration-300 hover:shadow-lg">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 text-xl font-bold text-white transition-transform group-hover:scale-110">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-linear-to-br from-amber-500 to-amber-700 text-xl font-bold text-white transition-transform group-hover:scale-110">
                       {university.charAt(0)}
                     </div>
                     <div className="flex-1">
@@ -293,7 +292,7 @@ export default function Page() {
                         {university}
                       </h3>
                       <p className="mt-1 text-sm text-gray-500">
-                        {Math.floor(Math.random() * 100) + 50} hostels available
+                        {50 + index * 10} hostels available
                       </p>
                     </div>
                     <FiArrowRight
@@ -338,10 +337,10 @@ export default function Page() {
                     ))}
                   </div>
                   <p className="mb-6 flex-1 leading-relaxed text-gray-700 italic">
-                    "{testimonial.text}"
+                    &ldquo;{testimonial.text}&rdquo;
                   </p>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-700 font-bold text-white">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-amber-500 to-amber-700 font-bold text-white">
                       {testimonial.avatar}
                     </div>
                     <div>
@@ -357,7 +356,7 @@ export default function Page() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-amber-700 via-amber-800 to-amber-900 px-4 py-24 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-linear-to-br from-amber-700 via-amber-800 to-amber-900 px-4 py-24 sm:px-6 lg:px-8">
         <div className="absolute inset-0 opacity-10">
           <div
             className="absolute inset-0"
@@ -373,7 +372,8 @@ export default function Page() {
               Ready to Find Your Ideal Hostel?
             </h2>
             <p className="mb-10 text-xl text-amber-100">
-              Join thousands of students who've found their perfect accommodation through UniHostel
+              Join thousands of students who&apos;ve found their perfect accommodation through
+              UniHostel
             </p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <button className="rounded-xl bg-white px-8 py-4 text-lg font-semibold text-amber-800 shadow-lg transition-all hover:bg-amber-50 hover:shadow-xl">
@@ -393,7 +393,7 @@ export default function Page() {
           <div className="mx-auto mb-12 grid max-w-5/6 gap-12 md:grid-cols-4">
             <div className="md:col-span-2">
               <div className="mb-4 flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-700">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-amber-500 to-amber-700">
                   <span className="text-xl font-bold text-white">H</span>
                 </div>
                 <span className="text-2xl font-bold">UniHostel</span>
