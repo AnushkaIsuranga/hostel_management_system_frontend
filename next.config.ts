@@ -1,7 +1,21 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async rewrites() {
+    const raw =
+      process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5134'
+
+    // Normalize to origin (strip trailing / and optional /api)
+    const withoutTrailingSlash = raw.replace(/\/+$/, '')
+    const origin = withoutTrailingSlash.replace(/\/api$/i, '')
+
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${origin}/api/:path*`,
+      },
+    ]
+  },
 }
 
 export default nextConfig

@@ -9,7 +9,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
   return (
     <>
-      <Navigation currentUser={user} />
+      <Navigation currentUser={user ?? undefined} />
       <main className="pt-20">{children}</main>
     </>
   )

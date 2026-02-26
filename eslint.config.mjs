@@ -16,4 +16,4 @@ const eslintConfig = defineConfig([
   ]),
 ])
 
-export default [eslintConfig, prettier]
+export default [...eslintConfig, prettier]
