@@ -1,0 +1,16 @@
+'use client'
+
+import { useEffect } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+
+export default function ScrollToTopOnRouteChange() {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Force top-of-page on every route/query change.
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [pathname, searchParams])
+
+  return null
+}

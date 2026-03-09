@@ -103,9 +103,9 @@ export default function LoginPage() {
 
       <div className="text-sm text-gray-600">
         <p>
-          Need admin access?{' '}
-          <Link href="/admin" className="font-medium text-amber-700 hover:underline">
-            Go to Admin
+          New here?{' '}
+          <Link href="/signup" className="font-medium text-amber-700 hover:underline">
+            Create an account
           </Link>
         </p>
       </div>

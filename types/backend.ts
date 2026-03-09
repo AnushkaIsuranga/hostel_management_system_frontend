@@ -35,8 +35,25 @@ export enum ApiInteractionType {
   FilterApply = 2,
   Save = 3,
   ContactOwner = 4,
-  BookAttempt = 5,
-  BookSuccess = 6,
+}
+
+export type InteractionEventCreateDto = {
+  userId?: Guid | null
+  hostelId?: Guid | null
+  eventType: ApiInteractionType
+  interactionType?: ApiInteractionType
+  sessionId?: string | null
+  metadata?: Record<string, unknown> | null
+}
+
+export type InteractionEventReadDto = {
+  id: Guid
+  userId: Guid | null
+  hostelId: Guid | null
+  eventType: ApiInteractionType
+  sessionId: string | null
+  metadata: Record<string, unknown> | null
+  createdAt: string
 }
 
 export type ProblemDetails = {
@@ -52,6 +69,26 @@ export type LoginRequestDto = {
   email: string
   password: string
   rememberMe?: boolean
+}
+
+export type UserRegisterDto = {
+  fullName: string
+  email: string
+  phoneNumber: string
+  password: string
+  role?: ApiUserRole
+  questionnaire?: SignupQuestionnaireDto | null
+}
+
+export type SignupQuestionnaireDto = {
+  universityId?: Guid | null
+  minBudget?: number | null
+  maxBudget?: number | null
+  requiredCapacity?: number | null
+  amenities?: string[] | null
+  priceWeight?: number | null
+  distanceWeight?: number | null
+  ratingWeight?: number | null
 }
 
 export type AuthTokensResponseDto = {
@@ -96,10 +133,12 @@ export type HostelReadDto = {
   verifiedAt: string | null
   verifiedByAdminId: Guid | null
   verificationStatus: ApiHostelVerificationStatus
+  latitude: number
+  longitude: number
+  googleMapsUrl: string
   minPrice: number
   maxPrice: number
   genderPolicy: string
-  locationUrl: string
   images: string[]
   status: ApiHostelStatus
   createdAt: string
@@ -111,16 +150,108 @@ export type HostelCreateDto = {
   description: string
   city: string
   address: string
-  ownerId: Guid
+  ownerId?: Guid
+  latitude?: number | null
+  longitude?: number | null
+  googleMapsUrl?: string | null
   minPrice: number
   maxPrice: number
   genderPolicy: string
-  locationUrl: string
   images?: string[]
   status: ApiHostelStatus
 }
 
-export type HostelUpdateDto = HostelCreateDto
+export type HostelUpdateDto = Omit<HostelCreateDto, 'ownerId'> & {
+  ownerId: Guid
+}
+
+export type UniversityReadDto = {
+  id: Guid
+  name: string
+  latitude: number
+  longitude: number
+}
+
+export type UniversityCreateDto = {
+  name: string
+  latitude?: number
+  longitude?: number
+  locationUrl?: string | null
+}
+
+export type UniversityUpdateDto = UniversityCreateDto
+
+export type AmenityReadDto = {
+  id: Guid
+  name: string
+}
+
+export type AmenityCreateDto = {
+  name: string
+}
+
+export type HostelAmenityCreateDto = {
+  hostelId: Guid
+  amenityId: Guid
+}
+
+export type HostelAmenityReadDto = {
+  hostelId: Guid
+  amenityId: Guid
+}
+
+export type HostelSearchWeightsDto = {
+  priceWeight?: number
+  distanceWeight?: number
+  ratingWeight?: number
+}
+
+export type HostelSearchRequestDto = {
+  universityId?: Guid | null
+  minBudget?: number | null
+  maxBudget?: number | null
+  requiredCapacity?: number | null
+  genderPolicy?: string | null
+  amenityIds?: Guid[] | null
+  amenities?: string[] | null
+  maxDistanceKm?: number | null
+  weights?: HostelSearchWeightsDto | null
+}
+
+export type StudentPreferenceWeightsDto = {
+  price: number
+  distance: number
+  rating: number
+}
+
+export type StudentPreferenceUpsertDto = {
+  universityId: Guid
+  minBudget?: number | null
+  maxBudget?: number | null
+  requiredCapacity?: number | null
+  selectedAmenities?: string[] | null
+  priorityOrder?: ('price' | 'distance' | 'rating')[] | null
+  weights?: StudentPreferenceWeightsDto | null
+}
+
+export type StudentPreferenceReadDto = {
+  userId: Guid
+  universityId: Guid
+  minBudget: number | null
+  maxBudget: number | null
+  requiredCapacity: number | null
+  selectedAmenities: string[]
+  priorityOrder: ('price' | 'distance' | 'rating')[]
+  weights: StudentPreferenceWeightsDto
+  createdAt: string
+  updatedAt: string | null
+}
+
+export type HostelSearchResultDto = {
+  hostel: HostelReadDto
+  distanceKm: number
+  score: number
+}
 
 export type HostelVerificationRequestReadDto = {
   id: Guid

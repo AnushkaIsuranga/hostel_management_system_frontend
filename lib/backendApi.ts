@@ -1,20 +1,34 @@
 import type {
+  AmenityCreateDto,
+  AmenityReadDto,
   AuthTokensResponseDto,
+  HostelAmenityCreateDto,
+  HostelAmenityReadDto,
   HostelCreateDto,
   HostelImageReadDto,
   HostelRatingSummaryDto,
   HostelReadDto,
+  HostelSearchRequestDto,
+  HostelSearchResultDto,
   HostelReviewCreateDto,
   HostelReviewReadDto,
   HostelReviewUpdateDto,
   HostelSubscriptionReadDto,
   HostelVerificationRequestReadDto,
   HostelUpdateDto,
+  InteractionEventCreateDto,
+  InteractionEventReadDto,
   LoginRequestDto,
   ProblemDetails,
   ReviewVerificationRequestDto,
+  StudentPreferenceReadDto,
+  StudentPreferenceUpsertDto,
+  UserRegisterDto,
   UpsertHostelSubscriptionDto,
   UpdateHostelImageOrderDto,
+  UniversityCreateDto,
+  UniversityReadDto,
+  UniversityUpdateDto,
   UserCreateDto,
   UserReadDto,
   UserUpdateDto,
@@ -106,6 +120,12 @@ export const AuthApi = {
       credentials: 'include',
       json: dto,
     }),
+  register: (dto: UserRegisterDto) =>
+    apiRequest<AuthTokensResponseDto>('/auth/register', {
+      method: 'POST',
+      credentials: 'include',
+      json: dto,
+    }),
   refresh: () =>
     apiRequest<AuthTokensResponseDto>('/auth/refresh', {
       method: 'POST',
@@ -130,6 +150,11 @@ export const UsersApi = {
 export const HostelsApi = {
   list: () => apiRequest<HostelReadDto[]>('/hostels', { method: 'GET' }),
   get: (id: string) => apiRequest<HostelReadDto>(`/hostels/${id}`, { method: 'GET' }),
+  search: (dto: HostelSearchRequestDto) =>
+    apiRequest<HostelSearchResultDto[]>('/hostels/search', {
+      method: 'POST',
+      json: dto,
+    }),
   create: (dto: HostelCreateDto) =>
     apiRequest<HostelReadDto>('/hostels', { method: 'POST', json: dto }),
   update: (id: string, dto: HostelUpdateDto) =>
@@ -184,6 +209,40 @@ export const HostelsApi = {
   },
 }
 
+export const UniversitiesApi = {
+  list: () => apiRequest<UniversityReadDto[]>('/universities', { method: 'GET' }),
+  get: (id: string) => apiRequest<UniversityReadDto>(`/universities/${id}`, { method: 'GET' }),
+  create: (dto: UniversityCreateDto) =>
+    apiRequest<UniversityReadDto>('/universities', { method: 'POST', json: dto }),
+  update: (id: string, dto: UniversityUpdateDto) =>
+    apiRequest<UniversityReadDto>(`/universities/${id}`, { method: 'PUT', json: dto }),
+  remove: (id: string) => apiRequest<void>(`/universities/${id}`, { method: 'DELETE' }),
+}
+
+export const StudentPreferencesApi = {
+  getMe: () => apiRequest<StudentPreferenceReadDto>('/student-preferences/me', { method: 'GET' }),
+  upsertMe: (dto: StudentPreferenceUpsertDto, accessToken?: string) =>
+    apiRequest<StudentPreferenceReadDto>('/student-preferences/me', {
+      method: 'PUT',
+      json: dto,
+      accessToken,
+    }),
+}
+
+export const AmenitiesApi = {
+  list: () => apiRequest<AmenityReadDto[]>('/amenities', { method: 'GET' }),
+  create: (dto: AmenityCreateDto) =>
+    apiRequest<AmenityReadDto>('/amenities', { method: 'POST', json: dto }),
+}
+
+export const HostelAmenitiesApi = {
+  list: () => apiRequest<HostelAmenityReadDto[]>('/hostel-amenities', { method: 'GET' }),
+  create: (dto: HostelAmenityCreateDto) =>
+    apiRequest<void>('/hostel-amenities', { method: 'POST', json: dto }),
+  remove: (hostelId: string, amenityId: string) =>
+    apiRequest<void>(`/hostel-amenities/${hostelId}/${amenityId}`, { method: 'DELETE' }),
+}
+
 export const VerificationRequestsApi = {
   approve: (requestId: string, dto: ReviewVerificationRequestDto) =>
     apiRequest<void>(`/verification-requests/${requestId}/approve`, {
@@ -207,8 +266,17 @@ export const HostelImagesApi = {
       formData.append('displayOrder', String(displayOrder))
     }
 
-    const baseUrl = getBaseUrl().replace(/\/$/, '')
-    const url = `${baseUrl}/hostelimages/${hostelId}`
+    const proxyAwareBaseUrl = getBaseUrl().replace(/\/$/, '')
+    const directUploadBaseUrl =
+      (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim().replace(/\/$/, '') ||
+      DEFAULT_SERVER_BASE_URL
+
+    const uploadBaseUrl =
+      typeof window !== 'undefined' && proxyAwareBaseUrl.startsWith('/')
+        ? directUploadBaseUrl
+        : proxyAwareBaseUrl
+
+    const url = `${uploadBaseUrl}/hostelimages/${hostelId}`
 
     const headers = new Headers()
     headers.set('Accept', 'application/json')
@@ -251,6 +319,29 @@ export const HostelImagesApi = {
     apiRequest<void>(`/hostelimages/${imageId}/order`, {
       method: 'PUT',
       json: dto,
+      accessToken,
+    }),
+}
+
+export const InteractionEventsApi = {
+  list: () => apiRequest<InteractionEventReadDto[]>('/interactionevents', { method: 'GET' }),
+  get: (id: string) =>
+    apiRequest<InteractionEventReadDto>(`/interactionevents/${id}`, { method: 'GET' }),
+  create: (dto: InteractionEventCreateDto, accessToken?: string) =>
+    apiRequest<InteractionEventReadDto>('/interactionevents', {
+      method: 'POST',
+      json: dto,
+      accessToken,
+    }),
+  update: (id: string, dto: InteractionEventCreateDto, accessToken?: string) =>
+    apiRequest<InteractionEventReadDto>(`/interactionevents/${id}`, {
+      method: 'PUT',
+      json: dto,
+      accessToken,
+    }),
+  remove: (id: string, accessToken?: string) =>
+    apiRequest<void>(`/interactionevents/${id}`, {
+      method: 'DELETE',
       accessToken,
     }),
 }

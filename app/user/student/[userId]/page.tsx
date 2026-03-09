@@ -56,12 +56,20 @@ export default function StudentProfilePage() {
           <div className="mt-1 text-sm text-gray-600">Student profile</div>
         </div>
 
-        <Link
-          href={`/user/student/${user.id}/settings`}
-          className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-        >
-          Edit profile
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/user/student/${user.id}/hostels`}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            Saved hostels
+          </Link>
+          <Link
+            href={`/user/student/${user.id}/settings`}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            Edit profile
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-3 rounded-xl border border-gray-200 bg-white p-4">
