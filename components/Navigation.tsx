@@ -5,13 +5,17 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
 import type { NavItem, NavProps, User, UserRole } from '../types'
-import { getAccessToken, getStoredEmail, getStoredRole } from '@/lib/auth'
+import { getAccessToken, getStoredEmail, getStoredRole, getStoredUserId } from '@/lib/auth'
 
 const defaultUser: User = {
   id: 'guest-1',
   name: 'Guest',
   email: 'guest@example.com',
   role: 'guest',
+}
+
+const isAuthenticatedRole = (role: unknown): role is Exclude<UserRole, 'guest'> => {
+  return role === 'student' || role === 'hostel_owner' || role === 'admin'
 }
 
 // Navigation items based on roles
@@ -25,8 +29,8 @@ const navItems: NavItem[] = [
 ]
 
 const userMenuItems: Record<UserRole, NavItem[]> = {
-  student: [{ name: 'Users', href: '/user', roles: ['student'] }],
-  hostel_owner: [{ name: 'Users', href: '/user', roles: ['hostel_owner'] }],
+  student: [],
+  hostel_owner: [],
   admin: [
     { name: 'Dashboard', href: '/admin/dashboard', roles: ['admin'] },
     { name: 'Hostels', href: '/admin/hostels', roles: ['admin'] },
@@ -49,14 +53,18 @@ export default function Navigation({
     if (!token) return defaultUser
 
     const roleNum = getStoredRole()
-    const role: UserRole = roleNum === 2 ? 'admin' : roleNum === 1 ? 'hostel_owner' : 'student'
+    const role: UserRole =
+      roleNum === 2 ? 'admin' : roleNum === 1 ? 'hostel_owner' : roleNum === 0 ? 'student' : 'guest'
+    if (!isAuthenticatedRole(role)) return defaultUser
 
-    const email = getStoredEmail() ?? 'user@example.com'
+    const email = getStoredEmail()
+    const userId = getStoredUserId()
+    if (!email || !userId) return defaultUser
     const name = email.includes('@') ? email.split('@')[0] : email
 
     return {
       ...defaultUser,
-      id: 'session',
+      id: userId,
       name,
       email,
       role,
@@ -114,7 +122,14 @@ export default function Navigation({
 
   const filteredNavItems = navItems.filter((item) => item.roles.includes(effectiveUser.role))
   const currentUserMenuItems = userMenuItems[effectiveUser.role] || []
-  const isAuthenticated = effectiveUser.role !== 'guest'
+  const isAuthenticated = isAuthenticatedRole(effectiveUser.role)
+
+  const profileHref =
+    effectiveUser.role === 'student'
+      ? `/user/student/${effectiveUser.id}`
+      : effectiveUser.role === 'hostel_owner'
+        ? `/user/owner/${effectiveUser.id}`
+        : '/user'
 
   const getInitials = (name: string): string => {
     return name
@@ -235,7 +250,10 @@ export default function Navigation({
 
                       {isUserMenuOpen && (
                         <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-gray-200 bg-white py-2 shadow-lg">
-                          <div className="border-b border-gray-100 px-4 py-3">
+                          <Link
+                            href={profileHref}
+                            className="block border-b border-gray-100 px-4 py-3 transition-colors hover:bg-amber-50"
+                          >
                             <p className="text-sm font-medium text-gray-900">
                               {effectiveUser.name}
                             </p>
@@ -243,7 +261,7 @@ export default function Navigation({
                             <p className="mt-1 text-xs text-gray-400">
                               {getRoleLabel(effectiveUser.role)}
                             </p>
-                          </div>
+                          </Link>
 
                           {currentUserMenuItems.map((item) => (
                             <Link
@@ -344,7 +362,7 @@ export default function Navigation({
               <div className="mt-4 border-t border-gray-100 pt-4">
                 {isAuthenticated ? (
                   <>
-                    <div className="flex items-center gap-3 px-4 py-3">
+                    <Link href={profileHref} className="flex items-center gap-3 px-4 py-3">
                       <div
                         className={`flex h-12 w-12 items-center justify-center rounded-full font-semibold text-white ${getRoleColor(
                           effectiveUser.role,
@@ -365,7 +383,7 @@ export default function Navigation({
                         <p className="font-medium text-gray-900">{effectiveUser.name}</p>
                         <p className="text-sm text-gray-500">{getRoleLabel(effectiveUser.role)}</p>
                       </div>
-                    </div>
+                    </Link>
 
                     {currentUserMenuItems.map((item) => (
                       <Link

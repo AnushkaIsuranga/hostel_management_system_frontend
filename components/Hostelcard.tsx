@@ -10,14 +10,19 @@ import { FiExternalLink, FiMapPin } from 'react-icons/fi'
 interface HostelCardProps {
   hostel: HostelReadDto
   onSave?: (hostelId: string) => void
+  onView?: (hostelId: string) => void
   isSaved?: boolean
 }
 
-export default function HostelCard({ hostel, onSave, isSaved = false }: HostelCardProps) {
+export default function HostelCard({ hostel, onSave, onView, isSaved = false }: HostelCardProps) {
   const handleSaveClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     onSave?.(hostel.id)
+  }
+
+  const handleViewClick = () => {
+    onView?.(hostel.id)
   }
 
   const formatPrice = (price: number) =>
@@ -49,7 +54,7 @@ export default function HostelCard({ hostel, onSave, isSaved = false }: HostelCa
   const primaryImage = hostel.images?.[0]
 
   return (
-    <Link href={`/hostels/${hostel.id}`} className="group block h-full">
+    <Link href={`/hostels/${hostel.id}`} onClick={handleViewClick} className="group block h-full">
       <div className="surface-card relative flex h-full flex-col overflow-hidden transition-shadow duration-300 hover:shadow-xl">
         {/* Image */}
         <div className="relative h-48 bg-gray-100">
@@ -75,7 +80,7 @@ export default function HostelCard({ hostel, onSave, isSaved = false }: HostelCa
 
               <p className="line-clamp-2 text-xs text-gray-700">{hostel.description}</p>
 
-              {hostel.locationUrl && (
+              {Number.isFinite(hostel.latitude) && Number.isFinite(hostel.longitude) && (
                 <div className="flex items-center gap-2 text-xs">
                   <FiExternalLink />
                   <span className="line-clamp-1">Open location</span>

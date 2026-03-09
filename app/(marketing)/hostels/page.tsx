@@ -1,13 +1,51 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { FiSearch, FiSliders, FiX } from 'react-icons/fi'
 
 import Filters from '@/components/Filters'
 import HostelCard from '@/components/Hostelcard'
-import { HostelsApi } from '@/lib/backendApi'
-import { ApiHostelStatus, type HostelReadDto } from '@/types/backend'
+import { HostelsApi, InteractionEventsApi } from '@/lib/backendApi'
+import { getStoredRole, getStoredUserId } from '@/lib/auth'
+import { ApiInteractionType, trackInteractionEvent } from '@/lib/interactionTracking'
+import {
+  ApiHostelStatus,
+  ApiUserRole,
+  type HostelReadDto,
+  type InteractionEventReadDto,
+} from '@/types/backend'
 import type { HostelFilters, SortOption } from '@/types'
+
+function getActionFromMetadata(metadata: InteractionEventReadDto['metadata']): string | undefined {
+  if (!metadata || typeof metadata !== 'object') return undefined
+  const action = (metadata as Record<string, unknown>).action
+  return typeof action === 'string' ? action : undefined
+}
+
+function resolveSavedHostelIds(events: InteractionEventReadDto[], userId: string): string[] {
+  const saveStateByHostel = new Map<string, { saved: boolean; createdAt: string }>()
+
+  const userSaveEvents = events
+    .filter(
+      (event) =>
+        event.userId === userId &&
+        event.eventType === ApiInteractionType.Save &&
+        Boolean(event.hostelId),
+    )
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+
+  for (const event of userSaveEvents) {
+    if (!event.hostelId) continue
+    const action = getActionFromMetadata(event.metadata)
+    const saved = action !== 'unsave'
+    saveStateByHostel.set(event.hostelId, { saved, createdAt: event.createdAt })
+  }
+
+  return [...saveStateByHostel.entries()]
+    .filter(([, value]) => value.saved)
+    .sort((a, b) => new Date(b[1].createdAt).getTime() - new Date(a[1].createdAt).getTime())
+    .map(([hostelId]) => hostelId)
+}
 
 export default function Page() {
   const [hostels, setHostels] = useState<HostelReadDto[]>([])
@@ -25,11 +63,33 @@ export default function Page() {
     availableOnly: false,
   })
 
+  const hasTrackedSearchRef = useRef(false)
+  const hasTrackedFiltersRef = useRef(false)
+
   async function reload() {
     setLoading(true)
     setError(null)
     try {
-      setHostels(await HostelsApi.list())
+      const userId = getStoredUserId()
+      const role = getStoredRole()
+      const eventsPromise = userId ? InteractionEventsApi.list() : Promise.resolve([])
+
+      let loadedHostels: HostelReadDto[] = []
+      if (userId && role === ApiUserRole.Student) {
+        try {
+          const results = await HostelsApi.search({})
+          loadedHostels = results.map((result) => result.hostel)
+        } catch {
+          loadedHostels = await HostelsApi.list()
+        }
+      } else {
+        loadedHostels = await HostelsApi.list()
+      }
+
+      const events = await eventsPromise
+
+      setHostels(loadedHostels)
+      setSavedHostels(userId ? resolveSavedHostelIds(events, userId) : [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load hostels')
     } finally {
@@ -80,6 +140,46 @@ export default function Page() {
     })
   }, [hostels, searchQuery, filters, sortBy])
 
+  useEffect(() => {
+    const normalizedQuery = searchQuery.trim()
+    if (!hasTrackedSearchRef.current) {
+      hasTrackedSearchRef.current = true
+      return
+    }
+    if (!normalizedQuery) return
+
+    const timeoutId = window.setTimeout(() => {
+      void trackInteractionEvent({
+        eventType: ApiInteractionType.Search,
+        metadata: {
+          query: normalizedQuery,
+          resultCount: filteredHostels.length,
+          sortBy,
+        },
+      })
+    }, 500)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [searchQuery, filteredHostels.length, sortBy])
+
+  useEffect(() => {
+    if (!hasTrackedFiltersRef.current) {
+      hasTrackedFiltersRef.current = true
+      return
+    }
+
+    void trackInteractionEvent({
+      eventType: ApiInteractionType.FilterApply,
+      metadata: {
+        filters,
+        resultCount: filteredHostels.length,
+        sortBy,
+      },
+    })
+  }, [filters, filteredHostels.length, sortBy])
+
   const handleResetFilters = () => {
     setFilters({
       priceRange: [0, 50000],
@@ -91,9 +191,29 @@ export default function Page() {
   }
 
   const handleSaveHostel = (hostelId: string) => {
-    setSavedHostels((prev) =>
-      prev.includes(hostelId) ? prev.filter((id) => id !== hostelId) : [...prev, hostelId],
-    )
+    setSavedHostels((prev) => {
+      const isAlreadySaved = prev.includes(hostelId)
+      void trackInteractionEvent({
+        eventType: ApiInteractionType.Save,
+        hostelId,
+        metadata: {
+          action: isAlreadySaved ? 'unsave' : 'save',
+        },
+      })
+
+      return isAlreadySaved ? prev.filter((id) => id !== hostelId) : [...prev, hostelId]
+    })
+  }
+
+  const handleViewHostel = (hostelId: string) => {
+    void trackInteractionEvent({
+      eventType: ApiInteractionType.ViewHostel,
+      hostelId,
+      metadata: {
+        source: 'hostels-list',
+        sortBy,
+      },
+    })
   }
 
   if (loading) {
@@ -124,7 +244,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-[#fffaf3]">
-      <div className="bg-gradient-to-br from-amber-50 to-white px-4 pt-5 pb-8 sm:px-6 lg:px-16">
+      <div className="bg-linear-to-br from-amber-50 to-white px-4 pt-5 pb-8 sm:px-6 lg:px-16">
         <div className="mx-auto px-10">
           <h1 className="mb-2 text-4xl font-bold text-gray-900">Find Your Perfect Hostel</h1>
           <p className="text-lg text-gray-600">Browse {hostels.length} hostels</p>
@@ -133,7 +253,7 @@ export default function Page() {
 
       <div className="mx-auto px-4 pt-5 pb-8 sm:px-6 lg:px-24">
         <div className="flex flex-col gap-8 lg:flex-row">
-          <aside className="hidden flex-shrink-0 lg:block lg:w-80">
+          <aside className="hidden shrink-0 lg:block lg:w-80">
             <Filters filters={filters} onFiltersChange={setFilters} onReset={handleResetFilters} />
           </aside>
 
@@ -189,6 +309,7 @@ export default function Page() {
                     key={hostel.id}
                     hostel={hostel}
                     onSave={handleSaveHostel}
+                    onView={handleViewHostel}
                     isSaved={savedHostels.includes(hostel.id)}
                   />
                 ))}

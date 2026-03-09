@@ -32,10 +32,18 @@ export default function LogoutPage() {
   }, [router])
 
   return (
-    <div className="space-y-2">
-      <h1 className="text-xl font-semibold text-gray-900">Signing out…</h1>
-      <p className="text-sm text-gray-600">Please wait.</p>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <h1 className="text-xl font-semibold text-gray-900">Signing out…</h1>
+        <p className="text-sm text-gray-600">Please wait.</p>
+      </div>
+
+      {error && (
+        <div className="surface-card border-var p-3 text-sm text-red-700">
+          <p className="font-semibold">Sign out failed</p>
+          <p className="text-red-700/90">{error}</p>
+        </div>
+      )}
     </div>
   )
 }

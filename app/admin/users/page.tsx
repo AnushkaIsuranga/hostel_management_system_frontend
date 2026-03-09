@@ -213,7 +213,13 @@ export default function Page() {
                         </button>
                         <button
                           onClick={() => remove(u)}
-                          className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                          disabled={ApiUserRole.Admin === u.role}
+                          className={
+                            `rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100` +
+                            (ApiUserRole.Admin === u.role
+                              ? ' cursor-not-allowed opacity-50'
+                              : ' hover:bg-red-100')
+                          }
                         >
                           Delete
                         </button>
