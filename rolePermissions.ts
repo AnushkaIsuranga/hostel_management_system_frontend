@@ -33,7 +33,7 @@ export const protectedRoutes: RouteRule[] = [
   },
 
   // User area: redirect/guard based on role
-  { pattern: /^\/user(\/|$)/, roles: ['admin', 'student', 'owner'] },
+  { pattern: /^\/user(\/|$)/, roles: ['student', 'owner'] },
 
   // Authenticated-only utility route
   { pattern: /^\/logout(\/|$)/, roles: ['admin', 'student', 'owner'] },

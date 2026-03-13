@@ -83,6 +83,12 @@ export function getStoredRole(): number | undefined {
   if (!canUseBrowserStorage()) return undefined
   const raw = window.localStorage.getItem(USER_ROLE_KEY)
   if (!raw) return undefined
+
+  const normalized = raw.trim().toLowerCase()
+  if (normalized === 'admin') return 2
+  if (normalized === 'owner' || normalized === 'hostel_owner') return 1
+  if (normalized === 'student') return 0
+
   const n = Number(raw)
   return Number.isFinite(n) ? n : undefined
 }

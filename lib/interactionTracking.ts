@@ -45,9 +45,8 @@ export async function trackInteractionEvent({
         userId: getStoredUserId() ?? null,
         hostelId: hostelId ?? null,
         eventType,
-        interactionType: eventType,
         sessionId: getSessionId(),
-        metadata: normalizeMetadata(metadata),
+        eventData: normalizeMetadata(metadata),
       },
       getAccessToken(),
     )

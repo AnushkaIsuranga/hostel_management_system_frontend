@@ -479,9 +479,6 @@ export default function Page() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Hostels</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              CRUD via `GET/POST/PUT/DELETE /api/hostels`
-            </p>
           </div>
           <button onClick={openCreate} className="accent-btn px-5 py-2.5 text-sm font-semibold">
             New Hostel

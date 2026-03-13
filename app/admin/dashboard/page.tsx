@@ -15,6 +15,7 @@ import {
   type HostelReadDto,
   type InteractionEventReadDto,
   type UserReadDto,
+  type UsersStatsDto,
 } from '@/types/backend'
 import {
   FaBell,
@@ -138,7 +139,8 @@ function MiniBar({
 
 export default function Page() {
   const [hostels, setHostels] = useState<HostelReadDto[] | null>(null)
-  const [users, setUsers] = useState<UserReadDto[] | null>(null)
+  const [owners, setOwners] = useState<UserReadDto[] | null>(null)
+  const [dashboardCounts, setDashboardCounts] = useState<UsersStatsDto | null>(null)
   const [events, setEvents] = useState<InteractionEventReadDto[] | null>(null)
   const [amenityCount, setAmenityCount] = useState<number | null>(null)
   const [uniCount, setUniCount] = useState<number | null>(null)
@@ -155,9 +157,10 @@ export default function Page() {
     async function load() {
       try {
         setError(null)
-        const [h, u, a, un, ev] = await Promise.allSettled([
+        const [h, us, o, a, un, ev] = await Promise.allSettled([
           HostelsApi.list(),
-          UsersApi.list(),
+          UsersApi.stats(),
+          UsersApi.byRole('Owner'),
           AmenitiesApi.list(),
           UniversitiesApi.list(),
           InteractionEventsApi.list(),
@@ -167,7 +170,8 @@ export default function Page() {
 
         const hostelList = h.status === 'fulfilled' ? h.value : []
         setHostels(h.status === 'fulfilled' ? h.value : null)
-        setUsers(u.status === 'fulfilled' ? u.value : null)
+        setOwners(o.status === 'fulfilled' ? o.value : null)
+        setDashboardCounts(us.status === 'fulfilled' ? us.value : null)
         setEvents(ev.status === 'fulfilled' ? ev.value : null)
         setAmenityCount(a.status === 'fulfilled' ? a.value.length : null)
         setUniCount(un.status === 'fulfilled' ? un.value.length : null)
@@ -245,7 +249,7 @@ export default function Page() {
           setActiveSubscriptionCount(active)
         }
 
-        if (h.status === 'rejected' && u.status === 'rejected') {
+        if (h.status === 'rejected' && us.status === 'rejected') {
           setError('Failed to load dashboard data')
         }
       } catch (e) {
@@ -265,17 +269,17 @@ export default function Page() {
 
   const userById = useMemo(() => {
     const map = new Map<string, UserReadDto>()
-    for (const user of users ?? []) {
+    for (const user of owners ?? []) {
       map.set(user.id, user)
     }
     return map
-  }, [users])
+  }, [owners])
 
   const stats = useMemo(() => {
     if (!hostels) return null
 
     const now = Date.now()
-    const total = hostels.length
+    const total = dashboardCounts?.hostels.totalCount ?? hostels.length
     const verified = hostels.filter((h) => h.isVerified).length
     const pending = hostels.filter(
       (h) => h.verificationStatus === ApiHostelVerificationStatus.Pending,
@@ -290,7 +294,9 @@ export default function Page() {
       (h) => h.verificationStatus === ApiHostelVerificationStatus.None,
     ).length
 
-    const hostelsThisWeek = hostels.filter((h) => isWithinDays(h.createdAt, 7, now)).length
+    const hostelsThisWeek =
+      dashboardCounts?.hostels.last7DaysCount ??
+      hostels.filter((h) => isWithinDays(h.createdAt, 7, now)).length
     const hostelsPrevWeek = hostels.filter((h) => {
       const created = new Date(h.createdAt).getTime()
       if (Number.isNaN(created)) return false
@@ -299,8 +305,12 @@ export default function Page() {
     }).length
     const hostelWeekDelta = hostelsThisWeek - hostelsPrevWeek
 
-    const usersThisWeek = (users ?? []).filter((u) => isWithinDays(u.createdAt, 7, now)).length
-    const usersThisMonth = (users ?? []).filter((u) => isWithinDays(u.createdAt, 30, now)).length
+    const usersThisWeek = dashboardCounts?.users.last7DaysCount ?? 0
+    const usersTotal = dashboardCounts?.users.totalCount ?? 0
+    const reviewsTotal =
+      dashboardCounts?.reviews.totalCount ??
+      Object.values(reviewCountsByHostel).reduce((sum, count) => sum + count, 0)
+    const reviewsThisWeekCount = dashboardCounts?.reviews.last7DaysCount ?? reviewsThisWeek
 
     const cityMap: Record<string, number> = {}
     for (const h of hostels) {
@@ -357,8 +367,10 @@ export default function Page() {
       expired,
       none,
       hostelsThisWeek,
+      usersTotal,
       usersThisWeek,
-      usersThisMonth,
+      reviewsTotal,
+      reviewsThisWeek: reviewsThisWeekCount,
       hostelWeekDelta,
       topCities,
       policyMap,
@@ -366,7 +378,7 @@ export default function Page() {
       growthSeries,
       recentHostels: [...hostels].slice(0, 6),
     }
-  }, [hostels, users, reviewCountsByHostel])
+  }, [dashboardCounts, hostels, reviewCountsByHostel, reviewsThisWeek])
 
   const queueHealth = useMemo(() => {
     if (verificationQueue.length === 0) {
@@ -391,8 +403,10 @@ export default function Page() {
     const now = Date.now()
     const last24h = (events ?? []).filter((event) => isWithinDays(event.createdAt, 1, now))
 
+    const getEventData = (event: InteractionEventReadDto) => event.eventData ?? event.metadata
+
     const isAction = (event: InteractionEventReadDto, name: string) => {
-      const action = event.metadata?.action
+      const action = getEventData(event)?.action
       return typeof action === 'string' && action === name
     }
 
@@ -484,7 +498,7 @@ export default function Page() {
           <h1 className="mt-1 text-2xl font-extrabold">Admin Dashboard</h1>
           <p className="mt-1 text-sm text-amber-200">
             {stats
-              ? `${stats.total} hostels · ${users?.length ?? 0} users · ${stats.pending} pending verification`
+              ? `${stats.total} hostels · ${stats.usersTotal} users · ${stats.pending} pending verification`
               : 'Loading overview...'}
           </p>
         </div>
@@ -507,15 +521,15 @@ export default function Page() {
         <StatCard
           label="Users (7 days)"
           value={stats?.usersThisWeek ?? 0}
-          sub={`${stats?.usersThisMonth ?? 0} in 30 days`}
+          sub={`${stats?.usersTotal ?? 0} total users`}
           icon={<FaUsers className="h-5 w-5" />}
           accent="bg-stone-600"
           href="/admin/users"
         />
         <StatCard
           label="Reviews (7 days)"
-          value={reviewsThisWeek}
-          sub="New review velocity"
+          value={stats?.reviewsThisWeek ?? reviewsThisWeek}
+          sub={`${stats?.reviewsTotal ?? 0} total reviews`}
           icon={<FaChartLine className="h-5 w-5" />}
           accent="bg-indigo-700"
         />
@@ -705,7 +719,7 @@ export default function Page() {
                 .slice(0, 5)
                 .map((event) => {
                   const hostel = hostels?.find((h) => h.id === event.hostelId)
-                  const action = event.metadata?.action
+                  const action = (event.eventData ?? event.metadata)?.action
                   const actionLabel =
                     typeof action === 'string'
                       ? action.replace(/_/g, ' ')
