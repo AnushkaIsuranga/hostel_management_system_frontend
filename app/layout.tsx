@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { Suspense } from 'react'
 import '@/styles/globals.css'
 import ScrollToTopOnRouteChange from '@/components/ScrollToTopOnRouteChange'
 
@@ -66,7 +67,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ScrollToTopOnRouteChange />
+        <Suspense fallback={null}>
+          <ScrollToTopOnRouteChange />
+        </Suspense>
         <main>{children}</main>
       </body>
     </html>

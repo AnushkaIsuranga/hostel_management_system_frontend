@@ -1,4 +1,4 @@
-import type { HostelFilters } from '../../types'
+import type { HostelFilters } from '../../../types'
 import {
   ApiUserRole,
   ApiHostelStatus,
@@ -6,7 +6,7 @@ import {
   type AmenityReadDto,
   type HostelReadDto,
   type UserReadDto,
-} from '../../types/backend'
+} from '../../../types/backend'
 
 export function createBaseFilters(overrides: Partial<HostelFilters> = {}): HostelFilters {
   return {
