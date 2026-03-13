@@ -10,7 +10,13 @@ export type SidebarItem = {
   href: string
 }
 
-export default function Sidebar({ title, items }: { title?: string; items: SidebarItem[] }) {
+type SidebarProps = {
+  title?: string
+  items: SidebarItem[]
+  className?: string
+}
+
+export default function Sidebar({ title, items, className }: SidebarProps) {
   const pathname = usePathname()
 
   const pathnameParts = pathname.split('/').filter(Boolean)
@@ -34,7 +40,9 @@ export default function Sidebar({ title, items }: { title?: string; items: Sideb
       .sort((a, b) => b.resolvedHref.length - a.resolvedHref.length)[0]?.resolvedHref ?? null
 
   return (
-    <aside className="surface-card sticky top-6 h-[calc(100vh-7rem)] w-full max-w-[260px] overflow-auto p-4">
+    <aside
+      className={`surface-card sticky top-6 h-[calc(100vh-7rem)] w-full max-w-[260px] overflow-auto p-4 ${className ?? ''}`}
+    >
       <div className="mb-4">
         <div className="text-sm font-semibold text-gray-900">{title ?? 'Menu'}</div>
         <div className="mt-1 text-xs text-gray-500">Hostel Management System</div>

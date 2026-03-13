@@ -208,7 +208,8 @@ export function createApp(): Express {
   })
 
   app.get('/api/users/role/:role', requireAuth, (req, res) => {
-    const raw = decodeURIComponent(req.params.role)
+    const roleParam = Array.isArray(req.params.role) ? req.params.role[0] : req.params.role
+    const raw = decodeURIComponent(roleParam ?? '')
     const roleNum = Number(raw)
     const filtered = MOCK_USERS.filter((u) =>
       Number.isFinite(roleNum)
