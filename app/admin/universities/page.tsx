@@ -103,12 +103,15 @@ export default function Page() {
       }
 
       const parsed = tryExtractCoordinates(locationUrl)
+      if (!parsed) {
+        setFormError('Could not extract coordinates from the provided Google Maps URL.')
+        return
+      }
 
       const payload: UniversityCreateDto = {
         name: form.name.trim(),
-        latitude: parsed?.latitude,
-        longitude: parsed?.longitude,
-        locationUrl,
+        latitude: parsed.latitude,
+        longitude: parsed.longitude,
       }
 
       if (drawerMode === 'create') {
@@ -145,9 +148,6 @@ export default function Page() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Universities</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              CRUD via `GET/POST/PUT/DELETE /api/universities`
-            </p>
           </div>
           <button onClick={openCreate} className="accent-btn px-5 py-2.5 text-sm font-semibold">
             New University

@@ -31,16 +31,24 @@ import type {
   UniversityUpdateDto,
   UserCreateDto,
   UserReadDto,
+  UsersStatsDto,
   UserUpdateDto,
 } from '@/types/backend'
 import { getAccessToken } from '@/lib/auth'
 
-const DEFAULT_SERVER_BASE_URL = 'http://localhost:5134/api'
+const DEFAULT_SERVER_BASE_URL = 'http://localhost:3000/api'
 const DEFAULT_BROWSER_BASE_URL = '/api'
+
+function normalizeApiBaseUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/+$/, '')
+  if (!trimmed) return DEFAULT_BROWSER_BASE_URL
+  if (trimmed === '/api' || trimmed.endsWith('/api')) return trimmed
+  return `${trimmed}/api`
+}
 
 function getBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_API_BASE_URL
-  if (raw && raw.trim()) return raw.trim()
+  if (raw && raw.trim()) return normalizeApiBaseUrl(raw)
 
   // In the browser, use same-origin and let Next.js rewrites forward to the backend.
   if (typeof window !== 'undefined') return DEFAULT_BROWSER_BASE_URL
@@ -140,6 +148,11 @@ export const AuthApi = {
 
 export const UsersApi = {
   list: () => apiRequest<UserReadDto[]>('/users', { method: 'GET' }),
+  stats: () => apiRequest<UsersStatsDto>('/users/stats', { method: 'GET' }),
+  byRole: (role: string | number) =>
+    apiRequest<UserReadDto[]>(`/users/role/${encodeURIComponent(String(role))}`, {
+      method: 'GET',
+    }),
   get: (id: string) => apiRequest<UserReadDto>(`/users/${id}`, { method: 'GET' }),
   create: (dto: UserCreateDto) => apiRequest<UserReadDto>('/users', { method: 'POST', json: dto }),
   update: (id: string, dto: UserUpdateDto) =>
@@ -267,9 +280,9 @@ export const HostelImagesApi = {
     }
 
     const proxyAwareBaseUrl = getBaseUrl().replace(/\/$/, '')
-    const directUploadBaseUrl =
-      (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim().replace(/\/$/, '') ||
-      DEFAULT_SERVER_BASE_URL
+    const directUploadBaseUrl = normalizeApiBaseUrl(
+      (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim() || DEFAULT_SERVER_BASE_URL,
+    )
 
     const uploadBaseUrl =
       typeof window !== 'undefined' && proxyAwareBaseUrl.startsWith('/')

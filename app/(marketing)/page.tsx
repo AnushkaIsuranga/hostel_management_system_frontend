@@ -178,7 +178,7 @@ export default function Page() {
                 <div className="relative">
                   {/* Main Image Card */}
                   <div className="surface-card rotate-2 transform p-2">
-                    <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-linear-to-br from-amber-100 to-amber-200">
+                    <div className="flex aspect-4/3 items-center justify-center overflow-hidden rounded-lg bg-linear-to-br from-amber-100 to-amber-200">
                       <div className="p-8 text-center">
                         <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-2xl bg-white shadow-lg">
                           <FaHome className="text-6xl text-amber-700" aria-hidden="true" />
@@ -237,7 +237,7 @@ export default function Page() {
           <AnimatedElement direction="up" duration={800}>
             <div className="mb-16 text-center">
               <h2 className="mb-4 text-4xl font-bold text-gray-900 lg:text-5xl">
-                Why Students Choose UniHostel
+                Why Students Choose UniHome
               </h2>
               <p className="mx-auto max-w-2xl text-xl text-gray-600">
                 Everything you need to find safe, affordable accommodation for your university
@@ -373,7 +373,7 @@ export default function Page() {
             </h2>
             <p className="mb-10 text-xl text-amber-100">
               Join thousands of students who&apos;ve found their perfect accommodation through
-              UniHostel
+              UniHome
             </p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <button className="rounded-xl bg-white px-8 py-4 text-lg font-semibold text-amber-800 shadow-lg transition-all hover:bg-amber-50 hover:shadow-xl">
@@ -396,7 +396,7 @@ export default function Page() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-amber-500 to-amber-700">
                   <span className="text-xl font-bold text-white">H</span>
                 </div>
-                <span className="text-2xl font-bold">UniHostel</span>
+                <span className="text-2xl font-bold">UniHome</span>
               </div>
               <p className="mb-6 max-w-md text-gray-400">
                 Making student accommodation search simple, safe, and transparent for Sri Lankan
@@ -479,7 +479,7 @@ export default function Page() {
 
           <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
             <p>
-              &copy; 2026 UniHostel. Made with{' '}
+              &copy; 2026 UniHome. Made with{' '}
               <FaHeart className="inline-block align-text-bottom" aria-hidden="true" /> for Sri
               Lankan students.
             </p>

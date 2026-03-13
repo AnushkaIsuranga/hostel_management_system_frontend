@@ -10,6 +10,10 @@ import { setAuthSession } from '@/lib/auth'
 import { ApiUserRole } from '@/types/backend'
 import AccountFields from '@/components/auth/AccountFields'
 
+function isAdminRole(role: ApiUserRole | 'Student' | 'Owner' | 'Admin'): boolean {
+  return role === ApiUserRole.Admin || role === 'Admin'
+}
+
 const PHONE_REGEX = /^\+?[0-9\s()-]{10,20}$/
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const UPPERCASE_REGEX = /[A-Z]/
@@ -115,7 +119,7 @@ export default function SignupPage() {
         password,
       }
       sessionStorage.setItem('signup_partial', JSON.stringify(partial))
-    } catch (e) {
+    } catch {
       // ignore storage errors
     }
 
@@ -148,7 +152,7 @@ export default function SignupPage() {
         return
       }
 
-      if (tokens.role === ApiUserRole.Admin) {
+      if (isAdminRole(tokens.role)) {
         router.replace('/admin')
         return
       }
@@ -193,7 +197,7 @@ export default function SignupPage() {
       if (partial.phoneNumber) setPhoneNumber(partial.phoneNumber)
       if (partial.password) setPassword(partial.password)
       if (partial.selectedRole) setSelectedRole(partial.selectedRole)
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, [])
@@ -207,7 +211,7 @@ export default function SignupPage() {
 
       {error && (
         <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
           <div>
             <p className="font-semibold text-red-900">Sign up failed</p>
             <p className="mt-0.5 text-sm text-red-700">{error}</p>
@@ -220,7 +224,7 @@ export default function SignupPage() {
 
         {!passwordsMatch && password && confirmPassword && (
           <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-            <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600" />
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
             <p className="text-sm font-medium text-red-700">Passwords do not match</p>
           </div>
         )}

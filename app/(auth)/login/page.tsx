@@ -8,6 +8,10 @@ import { AuthApi } from '@/lib/backendApi'
 import { setAuthSession } from '@/lib/auth'
 import { ApiUserRole } from '@/types/backend'
 
+function isAdminRole(role: ApiUserRole | 'Student' | 'Owner' | 'Admin'): boolean {
+  return role === ApiUserRole.Admin || role === 'Admin'
+}
+
 export default function LoginPage() {
   const router = useRouter()
 
@@ -35,7 +39,7 @@ export default function LoginPage() {
         return
       }
 
-      router.replace(tokens.role === ApiUserRole.Admin ? '/admin' : '/hostels')
+      router.replace(isAdminRole(tokens.role) ? '/admin' : '/hostels')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {

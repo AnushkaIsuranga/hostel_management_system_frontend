@@ -177,9 +177,9 @@ export default function Navigation({
           <div className="flex h-20 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-amber-500 to-amber-700">
-                <span className="text-xl font-bold text-white">H</span>
+                <span className="text-xl font-bold text-white">U</span>
               </div>
-              <span className="text-2xl font-bold text-amber-800">UniHostel</span>
+              <span className="text-2xl font-bold text-amber-800">UniHome</span>
             </Link>
 
             <div className="hidden items-center gap-6 md:flex">

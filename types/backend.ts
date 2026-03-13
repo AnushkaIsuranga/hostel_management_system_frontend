@@ -41,9 +41,8 @@ export type InteractionEventCreateDto = {
   userId?: Guid | null
   hostelId?: Guid | null
   eventType: ApiInteractionType
-  interactionType?: ApiInteractionType
-  sessionId?: string | null
-  metadata?: Record<string, unknown> | null
+  sessionId: string
+  eventData?: Record<string, unknown> | null
 }
 
 export type InteractionEventReadDto = {
@@ -52,7 +51,8 @@ export type InteractionEventReadDto = {
   hostelId: Guid | null
   eventType: ApiInteractionType
   sessionId: string | null
-  metadata: Record<string, unknown> | null
+  eventData: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
   createdAt: string
 }
 
@@ -96,7 +96,7 @@ export type AuthTokensResponseDto = {
   accessTokenExpiresAt: string
   userId: Guid
   email: string
-  role: ApiUserRole
+  role: ApiUserRole | 'Student' | 'Owner' | 'Admin'
 }
 
 export type UserReadDto = {
@@ -120,6 +120,21 @@ export type UserUpdateDto = {
   fullName: string
   phoneNumber: string
   role: ApiUserRole
+}
+
+export type UsersStatsDto = {
+  hostels: {
+    totalCount: number
+    last7DaysCount: number
+  }
+  users: {
+    totalCount: number
+    last7DaysCount: number
+  }
+  reviews: {
+    totalCount: number
+    last7DaysCount: number
+  }
 }
 
 export type HostelReadDto = {
@@ -174,9 +189,8 @@ export type UniversityReadDto = {
 
 export type UniversityCreateDto = {
   name: string
-  latitude?: number
-  longitude?: number
-  locationUrl?: string | null
+  latitude: number
+  longitude: number
 }
 
 export type UniversityUpdateDto = UniversityCreateDto
@@ -250,6 +264,7 @@ export type StudentPreferenceReadDto = {
 export type HostelSearchResultDto = {
   hostel: HostelReadDto
   distanceKm: number
+  averageRating: number
   score: number
 }
 
