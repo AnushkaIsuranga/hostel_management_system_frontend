@@ -36,25 +36,19 @@ import type {
 } from '@/types/backend'
 import { getAccessToken } from '@/lib/auth'
 
-const DEFAULT_SERVER_BASE_URL = 'http://localhost:3000/api'
-const DEFAULT_BROWSER_BASE_URL = '/api'
+const DEFAULT_API_BASE_URL = 'http://localhost:5134/api'
 
 function normalizeApiBaseUrl(raw: string): string {
   const trimmed = raw.trim().replace(/\/+$/, '')
-  if (!trimmed) return DEFAULT_BROWSER_BASE_URL
+  if (!trimmed) return DEFAULT_API_BASE_URL
   if (trimmed === '/api' || trimmed.endsWith('/api')) return trimmed
   return `${trimmed}/api`
 }
 
 function getBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_BASE_URL
+  const raw = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL
   if (raw && raw.trim()) return normalizeApiBaseUrl(raw)
-
-  // In the browser, use same-origin and let Next.js rewrites forward to the backend.
-  if (typeof window !== 'undefined') return DEFAULT_BROWSER_BASE_URL
-
-  // Server-side (build/SSR) fallback
-  return DEFAULT_SERVER_BASE_URL
+  return DEFAULT_API_BASE_URL
 }
 
 export class ApiError extends Error {
@@ -281,7 +275,8 @@ export const HostelImagesApi = {
 
     const proxyAwareBaseUrl = getBaseUrl().replace(/\/$/, '')
     const directUploadBaseUrl = normalizeApiBaseUrl(
-      (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim() || DEFAULT_SERVER_BASE_URL,
+      (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || '').trim() ||
+        DEFAULT_API_BASE_URL,
     )
 
     const uploadBaseUrl =

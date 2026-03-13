@@ -3,7 +3,7 @@ import type { NextConfig } from 'next'
 const nextConfig: NextConfig = {
   async rewrites() {
     const raw =
-      process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
+      process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5134'
 
     // Normalize to origin (strip trailing / and optional /api)
     const withoutTrailingSlash = raw.replace(/\/+$/, '')
