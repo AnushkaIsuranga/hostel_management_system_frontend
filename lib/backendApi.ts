@@ -39,6 +39,65 @@ import { getAccessToken } from '@/lib/auth'
 const DEFAULT_SERVER_API_BASE_URL = 'http://localhost:5134/api'
 const DEFAULT_BROWSER_API_BASE_URL = '/api'
 
+function normalizeAssetBaseUrl(raw: string): string {
+  return raw.trim().replace(/\/+$/, '')
+}
+
+function getAssetBaseUrl(): string | undefined {
+  const raw =
+    process.env.NEXT_PUBLIC_ASSET_BASE_URL ||
+    process.env.NEXT_PUBLIC_STORAGE_BASE_URL ||
+    process.env.NEXT_PUBLIC_S3_BASE_URL
+
+  if (!raw || !raw.trim()) return undefined
+  return normalizeAssetBaseUrl(raw)
+}
+
+function resolveHostelImageUrl(imageUrl: string): string {
+  if (!imageUrl) return imageUrl
+
+  const normalized = imageUrl.replace(/\\/g, '/')
+  if (/^https?:\/\//i.test(normalized)) return normalized
+
+  const uploadsIndex = normalized.toLowerCase().indexOf('/uploads/')
+  const normalizedPath =
+    uploadsIndex >= 0
+      ? normalized.slice(uploadsIndex)
+      : normalized.startsWith('/')
+        ? normalized
+        : `/${normalized}`
+
+  if (normalizedPath.toLowerCase().startsWith('/uploads/')) {
+    const assetBaseUrl = getAssetBaseUrl()
+    if (assetBaseUrl) {
+      return `${assetBaseUrl}${normalizedPath}`
+    }
+  }
+
+  return normalizedPath
+}
+
+function mapHostel(hostel: HostelReadDto): HostelReadDto {
+  return {
+    ...hostel,
+    images: (hostel.images ?? []).map(resolveHostelImageUrl),
+  }
+}
+
+function mapHostelSearchResult(result: HostelSearchResultDto): HostelSearchResultDto {
+  return {
+    ...result,
+    hostel: mapHostel(result.hostel),
+  }
+}
+
+function mapHostelImage(image: HostelImageReadDto): HostelImageReadDto {
+  return {
+    ...image,
+    imageUrl: resolveHostelImageUrl(image.imageUrl),
+  }
+}
+
 function normalizeApiBaseUrl(raw: string): string {
   const trimmed = raw.trim().replace(/\/+$/, '')
   if (!trimmed) {
@@ -160,17 +219,23 @@ export const UsersApi = {
 }
 
 export const HostelsApi = {
-  list: () => apiRequest<HostelReadDto[]>('/hostels', { method: 'GET' }),
-  get: (id: string) => apiRequest<HostelReadDto>(`/hostels/${id}`, { method: 'GET' }),
+  list: async () => {
+    const hostels = await apiRequest<HostelReadDto[]>('/hostels', { method: 'GET' })
+    return hostels.map(mapHostel)
+  },
+  get: async (id: string) => {
+    const hostel = await apiRequest<HostelReadDto>(`/hostels/${id}`, { method: 'GET' })
+    return mapHostel(hostel)
+  },
   search: (dto: HostelSearchRequestDto) =>
     apiRequest<HostelSearchResultDto[]>('/hostels/search', {
       method: 'POST',
       json: dto,
-    }),
+    }).then((results) => results.map(mapHostelSearchResult)),
   create: (dto: HostelCreateDto) =>
-    apiRequest<HostelReadDto>('/hostels', { method: 'POST', json: dto }),
+    apiRequest<HostelReadDto>('/hostels', { method: 'POST', json: dto }).then(mapHostel),
   update: (id: string, dto: HostelUpdateDto) =>
-    apiRequest<HostelReadDto>(`/hostels/${id}`, { method: 'PUT', json: dto }),
+    apiRequest<HostelReadDto>(`/hostels/${id}`, { method: 'PUT', json: dto }).then(mapHostel),
   remove: (id: string) => apiRequest<void>(`/hostels/${id}`, { method: 'DELETE' }),
 
   reviews: {
@@ -270,7 +335,9 @@ export const VerificationRequestsApi = {
 
 export const HostelImagesApi = {
   list: (hostelId: string) =>
-    apiRequest<HostelImageReadDto[]>(`/hostelimages/${hostelId}`, { method: 'GET' }),
+    apiRequest<HostelImageReadDto[]>(`/hostelimages/${hostelId}`, { method: 'GET' }).then(
+      (images) => images.map(mapHostelImage),
+    ),
   upload: async (hostelId: string, file: File, accessToken: string, displayOrder?: number) => {
     const formData = new FormData()
     formData.append('file', file)
@@ -323,7 +390,7 @@ export const HostelImagesApi = {
       throw new ApiError(message, res.status, problem)
     }
 
-    return payload as HostelImageReadDto
+    return mapHostelImage(payload as HostelImageReadDto)
   },
   remove: (imageId: string, accessToken: string) =>
     apiRequest<void>(`/hostelimages/${imageId}`, {

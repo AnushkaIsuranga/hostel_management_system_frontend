@@ -64,6 +64,10 @@ function normalizeHostelImageUrl(imageUrl: string): string {
 
   const normalized = imageUrl.replace(/\\/g, '/')
 
+  if (/^https?:\/\//i.test(normalized)) {
+    return normalized
+  }
+
   if (normalized.startsWith('/uploads/')) {
     return normalized
   }
