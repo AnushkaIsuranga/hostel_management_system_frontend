@@ -36,11 +36,16 @@ import type {
 } from '@/types/backend'
 import { getAccessToken } from '@/lib/auth'
 
-const DEFAULT_API_BASE_URL = 'http://localhost:5134/api'
+const DEFAULT_SERVER_API_BASE_URL = 'http://localhost:5134/api'
+const DEFAULT_BROWSER_API_BASE_URL = '/api'
 
 function normalizeApiBaseUrl(raw: string): string {
   const trimmed = raw.trim().replace(/\/+$/, '')
-  if (!trimmed) return DEFAULT_API_BASE_URL
+  if (!trimmed) {
+    return typeof window === 'undefined'
+      ? DEFAULT_SERVER_API_BASE_URL
+      : DEFAULT_BROWSER_API_BASE_URL
+  }
   if (trimmed === '/api' || trimmed.endsWith('/api')) return trimmed
   return `${trimmed}/api`
 }
@@ -48,7 +53,7 @@ function normalizeApiBaseUrl(raw: string): string {
 function getBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL
   if (raw && raw.trim()) return normalizeApiBaseUrl(raw)
-  return DEFAULT_API_BASE_URL
+  return typeof window === 'undefined' ? DEFAULT_SERVER_API_BASE_URL : DEFAULT_BROWSER_API_BASE_URL
 }
 
 export class ApiError extends Error {
@@ -276,7 +281,9 @@ export const HostelImagesApi = {
     const proxyAwareBaseUrl = getBaseUrl().replace(/\/$/, '')
     const directUploadBaseUrl = normalizeApiBaseUrl(
       (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || '').trim() ||
-        DEFAULT_API_BASE_URL,
+        (typeof window === 'undefined'
+          ? DEFAULT_SERVER_API_BASE_URL
+          : DEFAULT_BROWSER_API_BASE_URL),
     )
 
     const uploadBaseUrl =
