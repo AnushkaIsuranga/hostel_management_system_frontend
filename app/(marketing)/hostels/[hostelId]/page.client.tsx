@@ -213,6 +213,27 @@ export default function HostelDetailsClient({ initialHostelId }: HostelDetailsCl
     }
   }, [hostelId])
 
+  useEffect(() => {
+    if (hostel?.name && hostel.city) {
+      document.title = `${hostel.name} in ${hostel.city} | UniHome`
+      return
+    }
+
+    if (hostel?.name) {
+      document.title = `${hostel.name} | UniHome`
+      return
+    }
+
+    if (loading) {
+      document.title = 'Loading Hostel | UniHome'
+      return
+    }
+
+    if (error) {
+      document.title = 'Hostel Details | UniHome'
+    }
+  }, [hostel, loading, error])
+
   const mapUrl = useMemo(() => {
     if (!hostel) return ''
     if (hostel.googleMapsUrl?.trim()) return hostel.googleMapsUrl
@@ -424,7 +445,7 @@ export default function HostelDetailsClient({ initialHostelId }: HostelDetailsCl
                     ? `${summary.averageRating.toFixed(1)} ★ (${summary.reviewCount})`
                     : 'No reviews yet'}
                 </span>
-                <span>{distanceText}</span>
+                {isLoggedIn && <span>{distanceText}</span>}
               </div>
               <a
                 href={mapUrl}
@@ -871,10 +892,12 @@ export default function HostelDetailsClient({ initialHostelId }: HostelDetailsCl
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between">
-                      <span>Near university</span>
-                      <span className="font-semibold text-gray-900">{distanceText}</span>
-                    </div>
+                    {isLoggedIn && (
+                      <div className="flex justify-between">
+                        <span>Near university</span>
+                        <span className="font-semibold text-gray-900">{distanceText}</span>
+                      </div>
+                    )}
                     {hostel.isVerified && (
                       <div className="flex justify-between">
                         <span>Listing status</span>

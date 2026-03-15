@@ -9,8 +9,10 @@ type HostelsPageParams = {
   hostelId?: string
 }
 
+type Awaitable<T> = T | Promise<T>
+
 type HostelsPageProps = {
-  params?: HostelsPageParams
+  params?: Awaitable<HostelsPageParams>
 }
 
 function getSiteUrl(): string {
@@ -55,13 +57,14 @@ async function loadHostel(hostelId?: string): Promise<HostelReadDto | null> {
 
 export async function generateMetadata({ params }: HostelsPageProps): Promise<Metadata> {
   const siteUrl = getSiteUrl()
-  const hostelId = params?.hostelId
+  const resolvedParams = await params
+  const hostelId = resolvedParams?.hostelId
   const canonicalPath = hostelId ? `/hostels/${encodeURIComponent(hostelId)}` : '/hostels'
 
   const hostel = await loadHostel(hostelId)
   if (!hostel) {
     return {
-      title: 'Hostel Not Found | UniHome',
+      title: 'Hostel Not Found',
       description: 'The requested hostel listing could not be found on UniHome.',
       alternates: {
         canonical: canonicalPath,
@@ -73,7 +76,7 @@ export async function generateMetadata({ params }: HostelsPageProps): Promise<Me
     }
   }
 
-  const title = `${hostel.name} in ${hostel.city} | UniHome`
+  const title = `${hostel.name} in ${hostel.city}`
   const description = buildDescription(hostel)
   const heroImage = hostel.images?.[0] ? toAbsoluteUrl(hostel.images[0], siteUrl) : undefined
   const canonical = toAbsoluteUrl(canonicalPath, siteUrl)
@@ -108,6 +111,7 @@ export async function generateMetadata({ params }: HostelsPageProps): Promise<Me
   }
 }
 
-export default function Page({ params }: HostelsPageProps) {
-  return <HostelDetailsClient initialHostelId={params?.hostelId} />
+export default async function Page({ params }: HostelsPageProps) {
+  const resolvedParams = await params
+  return <HostelDetailsClient initialHostelId={resolvedParams?.hostelId} />
 }

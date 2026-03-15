@@ -401,13 +401,11 @@ export default function Page() {
           return
         }
 
-        for (let index = 0; index < selectedImageFiles.length; index += 1) {
-          await Promise.all(
-            selectedImageFiles.map((file, index) =>
-              HostelImagesApi.upload(savedHostelId, file, token, existingImages.length + index),
-            ),
-          )
-        }
+        await Promise.all(
+          selectedImageFiles.map((file, index) =>
+            HostelImagesApi.upload(savedHostelId, file, token, existingImages.length + index),
+          ),
+        )
 
         setSelectedImageFiles([])
         await loadHostelImages(savedHostelId)
