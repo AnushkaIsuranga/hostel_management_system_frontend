@@ -14,7 +14,7 @@ const setAuthSessionMock = jest.fn()
 const routerMock = { push: pushMock, replace: replaceMock }
 
 jest.mock('next/navigation', () =>
-  require('./helpers/navigationMocks').createNextNavigationModule({
+  jest.requireActual('../helpers/navigationMocks').createNextNavigationModule({
     useRouter: () => routerMock,
   }),
 )
@@ -126,7 +126,7 @@ describe('OnboardingPage', () => {
       })
     })
 
-    expect(setAuthSessionMock).toHaveBeenCalledWith(baseTokens)
+    expect(setAuthSessionMock).toHaveBeenCalledWith(baseTokens, { persistent: true })
     expect(upsertMeMock).toHaveBeenCalledWith(
       expect.objectContaining({
         universityId: 'uni-1',
@@ -139,4 +139,3 @@ describe('OnboardingPage', () => {
     expect(replaceMock).toHaveBeenCalledWith('/hostels')
   })
 })
-

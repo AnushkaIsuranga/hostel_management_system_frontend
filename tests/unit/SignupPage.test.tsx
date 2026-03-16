@@ -10,10 +10,10 @@ const registerMock = jest.fn()
 const setAuthSessionMock = jest.fn()
 const routerMock = { push: pushMock, replace: replaceMock }
 
-jest.mock('next/link', () => require('./helpers/nextMocks').nextLinkModule)
+jest.mock('next/link', () => jest.requireActual('../helpers/nextMocks').nextLinkModule)
 
 jest.mock('next/navigation', () =>
-  require('./helpers/navigationMocks').createNextNavigationModule({
+  jest.requireActual('../helpers/navigationMocks').createNextNavigationModule({
     useRouter: () => routerMock,
   }),
 )
@@ -155,7 +155,7 @@ describe('SignupPage', () => {
       })
     })
 
-    expect(setAuthSessionMock).toHaveBeenCalledWith(baseTokens)
+    expect(setAuthSessionMock).toHaveBeenCalledWith(baseTokens, { persistent: true })
     expect(replaceMock).toHaveBeenCalledWith('/hostels')
   })
 
@@ -174,4 +174,3 @@ describe('SignupPage', () => {
     })
   })
 })
-
