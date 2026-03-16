@@ -141,7 +141,7 @@ export default function SignupPage() {
         role: selectedRole,
       })
 
-      setAuthSession(tokens)
+      setAuthSession(tokens, { persistent: !isAdminRole(tokens.role) })
 
       const next =
         typeof window !== 'undefined'

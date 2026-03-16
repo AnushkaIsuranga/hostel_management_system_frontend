@@ -34,7 +34,7 @@ import type {
   UsersStatsDto,
   UserUpdateDto,
 } from '@/types/backend'
-import { getAccessToken } from '@/lib/auth'
+import { clearAuthSession, getAccessToken, setAuthSession } from '@/lib/auth'
 
 const DEFAULT_SERVER_API_BASE_URL = 'http://localhost:5134/api'
 const DEFAULT_BROWSER_API_BASE_URL = '/api'
@@ -130,6 +130,41 @@ export class ApiError extends Error {
 type ApiInit = Omit<RequestInit, 'body'> & {
   json?: unknown
   accessToken?: string
+  skipAuthRefresh?: boolean
+}
+
+const AUTH_PATHS_WITHOUT_REFRESH = new Set([
+  '/auth/login',
+  '/auth/register',
+  '/auth/logout',
+  '/auth/refresh',
+])
+
+let refreshPromise: Promise<AuthTokensResponseDto | null> | null = null
+
+async function refreshAuthSession(): Promise<AuthTokensResponseDto | null> {
+  if (refreshPromise) {
+    return refreshPromise
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const tokens = await apiRequest<AuthTokensResponseDto>('/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        skipAuthRefresh: true,
+      })
+      setAuthSession(tokens)
+      return tokens
+    } catch {
+      clearAuthSession()
+      return null
+    } finally {
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
 }
 
 async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
@@ -165,6 +200,21 @@ async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
     ? await res.json().catch(() => null)
     : await res.text().catch(() => null)
 
+  if (
+    res.status === 401 &&
+    !init?.skipAuthRefresh &&
+    !AUTH_PATHS_WITHOUT_REFRESH.has(normalizedPath)
+  ) {
+    const refreshedTokens = await refreshAuthSession()
+    if (refreshedTokens?.accessToken) {
+      return apiRequest<T>(path, {
+        ...init,
+        accessToken: refreshedTokens.accessToken,
+        skipAuthRefresh: true,
+      })
+    }
+  }
+
   if (!res.ok) {
     const problem = (
       typeof payload === 'object' && payload !== null ? (payload as ProblemDetails) : undefined
@@ -192,11 +242,15 @@ export const AuthApi = {
       credentials: 'include',
       json: dto,
     }),
-  refresh: () =>
-    apiRequest<AuthTokensResponseDto>('/auth/refresh', {
+  refresh: async () => {
+    const tokens = await apiRequest<AuthTokensResponseDto>('/auth/refresh', {
       method: 'POST',
       credentials: 'include',
-    }),
+      skipAuthRefresh: true,
+    })
+    setAuthSession(tokens)
+    return tokens
+  },
   logout: () =>
     apiRequest<void>('/auth/logout', {
       method: 'POST',

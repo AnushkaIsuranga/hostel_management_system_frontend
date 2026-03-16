@@ -28,7 +28,7 @@ export default function LoginPage() {
 
     try {
       const tokens = await AuthApi.login({ email, password, rememberMe })
-      setAuthSession(tokens)
+      setAuthSession(tokens, { persistent: rememberMe && !isAdminRole(tokens.role) })
 
       const next =
         typeof window !== 'undefined'
