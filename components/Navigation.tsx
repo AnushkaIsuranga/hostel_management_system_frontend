@@ -9,6 +9,7 @@ import {
   AUTH_SESSION_CHANGE_EVENT,
   getAccessToken,
   getStoredEmail,
+  getStoredFullName,
   getStoredRole,
   getStoredUserId,
 } from '@/lib/auth'
@@ -45,6 +46,12 @@ const userMenuItems: Record<UserRole, NavItem[]> = {
   guest: [],
 }
 
+function firstNameOf(fullName?: string): string {
+  if (!fullName) return ''
+  const [first = ''] = fullName.trim().split(/\s+/)
+  return first
+}
+
 function buildStoredUser(): User {
   const token = getAccessToken()
   if (!token) return defaultUser
@@ -55,9 +62,10 @@ function buildStoredUser(): User {
   if (!isAuthenticatedRole(role)) return defaultUser
 
   const email = getStoredEmail()
+  const fullName = getStoredFullName()
   const userId = getStoredUserId()
   if (!email || !userId) return defaultUser
-  const name = email.includes('@') ? email.split('@')[0] : email
+  const name = firstNameOf(fullName) || email
 
   return {
     ...defaultUser,
@@ -153,12 +161,8 @@ export default function Navigation({
         : '/user'
 
   const getInitials = (name: string): string => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
+    const trimmed = name.trim()
+    return trimmed ? trimmed.charAt(0).toUpperCase() : 'G'
   }
 
   const getRoleColor = (role: UserRole): string => {

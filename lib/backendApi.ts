@@ -1,8 +1,9 @@
-import type {
-  AmenityCreateDto,
-  AmenityReadDto,
-  AuthTokensResponseDto,
-  HostelAmenityCreateDto,
+import {
+  ApiUserRole,
+  type AmenityCreateDto,
+  type AmenityReadDto,
+  type AuthTokensResponseDto,
+  type HostelAmenityCreateDto,
   HostelAmenityReadDto,
   HostelCreateDto,
   HostelImageReadDto,
@@ -38,6 +39,7 @@ import { clearAuthSession, getAccessToken, setAuthSession } from '@/lib/auth'
 
 const DEFAULT_SERVER_API_BASE_URL = 'http://localhost:5134/api'
 const DEFAULT_BROWSER_API_BASE_URL = '/api'
+const AUTH_PATHS = new Set(['/auth/login', '/auth/register', '/auth/logout', '/auth/refresh'])
 
 function normalizeAssetBaseUrl(raw: string): string {
   return raw.trim().replace(/\/+$/, '')
@@ -133,12 +135,26 @@ type ApiInit = Omit<RequestInit, 'body'> & {
   skipAuthRefresh?: boolean
 }
 
-const AUTH_PATHS_WITHOUT_REFRESH = new Set([
-  '/auth/login',
-  '/auth/register',
-  '/auth/logout',
-  '/auth/refresh',
-])
+function serializeRegisterRole(role: UserRegisterDto['role']): UserRegisterDto['role'] {
+  if (role === undefined || role === null) return role
+  if (role === ApiUserRole.Student || String(role) === String(ApiUserRole.Student)) {
+    return 'Student'
+  }
+  if (role === ApiUserRole.Owner || String(role) === String(ApiUserRole.Owner)) {
+    return 'Owner'
+  }
+  if (role === ApiUserRole.Admin || String(role) === String(ApiUserRole.Admin)) {
+    return 'Admin'
+  }
+  return role
+}
+
+function serializeRegisterDto(dto: UserRegisterDto): UserRegisterDto {
+  return {
+    ...dto,
+    role: serializeRegisterRole(dto.role),
+  }
+}
 
 let refreshPromise: Promise<AuthTokensResponseDto | null> | null = null
 
@@ -179,7 +195,7 @@ async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
     headers.set('Content-Type', 'application/json')
   }
   const token = init?.accessToken ?? getAccessToken()
-  if (token) {
+  if (token && !AUTH_PATHS.has(normalizedPath)) {
     headers.set('Authorization', `Bearer ${token}`)
   }
 
@@ -200,11 +216,7 @@ async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
     ? await res.json().catch(() => null)
     : await res.text().catch(() => null)
 
-  if (
-    res.status === 401 &&
-    !init?.skipAuthRefresh &&
-    !AUTH_PATHS_WITHOUT_REFRESH.has(normalizedPath)
-  ) {
+  if (res.status === 401 && !init?.skipAuthRefresh && !AUTH_PATHS.has(normalizedPath)) {
     const refreshedTokens = await refreshAuthSession()
     if (refreshedTokens?.accessToken) {
       return apiRequest<T>(path, {
@@ -240,7 +252,7 @@ export const AuthApi = {
     apiRequest<AuthTokensResponseDto>('/auth/register', {
       method: 'POST',
       credentials: 'include',
-      json: dto,
+      json: serializeRegisterDto(dto),
     }),
   refresh: async () => {
     const tokens = await apiRequest<AuthTokensResponseDto>('/auth/refresh', {

@@ -76,7 +76,7 @@ export type UserRegisterDto = {
   email: string
   phoneNumber: string
   password: string
-  role?: ApiUserRole
+  role?: ApiUserRole | 'Student' | 'Owner' | 'Admin'
   questionnaire?: SignupQuestionnaireDto | null
 }
 
@@ -96,6 +96,7 @@ export type AuthTokensResponseDto = {
   accessTokenExpiresAt: string
   userId: Guid
   email: string
+  fullName?: string
   role: ApiUserRole | 'Student' | 'Owner' | 'Admin'
 }
 

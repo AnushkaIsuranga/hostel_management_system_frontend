@@ -7,13 +7,14 @@ const pushMock = jest.fn()
 const pathnameMock = jest.fn()
 const getAccessTokenMock = jest.fn()
 const getStoredEmailMock = jest.fn()
+const getStoredFullNameMock = jest.fn()
 const getStoredRoleMock = jest.fn()
 const getStoredUserIdMock = jest.fn()
 
-jest.mock('next/link', () => require('./helpers/nextMocks').nextLinkModule)
+jest.mock('next/link', () => jest.requireActual('../helpers/nextMocks').nextLinkModule)
 
 jest.mock('next/navigation', () =>
-  require('./helpers/navigationMocks').createNextNavigationModule({
+  jest.requireActual('../helpers/navigationMocks').createNextNavigationModule({
     usePathname: (...args: any[]) => pathnameMock(...args),
     useRouter: () => ({ push: pushMock }),
   }),
@@ -22,8 +23,10 @@ jest.mock('next/navigation', () =>
 jest.mock('../../lib/auth', () => ({
   getAccessToken: (...args: any[]) => getAccessTokenMock(...args),
   getStoredEmail: (...args: any[]) => getStoredEmailMock(...args),
+  getStoredFullName: (...args: any[]) => getStoredFullNameMock(...args),
   getStoredRole: (...args: any[]) => getStoredRoleMock(...args),
   getStoredUserId: (...args: any[]) => getStoredUserIdMock(...args),
+  AUTH_SESSION_CHANGE_EVENT: 'hms-auth-session-change',
 }))
 
 describe('Navigation component', () => {
@@ -32,12 +35,14 @@ describe('Navigation component', () => {
     pathnameMock.mockReset()
     getAccessTokenMock.mockReset()
     getStoredEmailMock.mockReset()
+    getStoredFullNameMock.mockReset()
     getStoredRoleMock.mockReset()
     getStoredUserIdMock.mockReset()
 
     pathnameMock.mockReturnValue('/')
     getAccessTokenMock.mockReturnValue(null)
     getStoredEmailMock.mockReturnValue(null)
+    getStoredFullNameMock.mockReturnValue(null)
     getStoredRoleMock.mockReturnValue(null)
     getStoredUserIdMock.mockReturnValue(null)
   })
@@ -75,11 +80,12 @@ describe('Navigation component', () => {
     getAccessTokenMock.mockReturnValue('token-1')
     getStoredRoleMock.mockReturnValue(2)
     getStoredEmailMock.mockReturnValue('admin@example.com')
+    getStoredFullNameMock.mockReturnValue('Admin Person')
     getStoredUserIdMock.mockReturnValue('admin-1')
 
     render(<Navigation />)
 
-    fireEvent.click(screen.getByText('admin').closest('button') as HTMLButtonElement)
+    fireEvent.click(screen.getByText('Admin').closest('button') as HTMLButtonElement)
 
     expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Hostels' })).toBeInTheDocument()
@@ -134,6 +140,7 @@ describe('Navigation component', () => {
     getAccessTokenMock.mockReturnValue('token-1')
     getStoredRoleMock.mockReturnValue(1)
     getStoredEmailMock.mockReturnValue('owner@example.com')
+    getStoredFullNameMock.mockReturnValue('Owner User')
     getStoredUserIdMock.mockReturnValue('owner-1')
 
     render(<Navigation />)
@@ -146,6 +153,19 @@ describe('Navigation component', () => {
       '/user/owner/owner-1',
     )
     expect(screen.getAllByRole('button', { name: 'Sign Out' }).length).toBeGreaterThan(0)
+  })
+
+  it('uses stored full name for the profile display and single-letter avatar', () => {
+    getAccessTokenMock.mockReturnValue('token-1')
+    getStoredRoleMock.mockReturnValue(1)
+    getStoredEmailMock.mockReturnValue('owner@example.com')
+    getStoredFullNameMock.mockReturnValue('Owner User')
+    getStoredUserIdMock.mockReturnValue('owner-1')
+
+    render(<Navigation />)
+
+    expect(screen.getByText('Owner')).toBeInTheDocument()
+    expect(screen.getByText('O')).toBeInTheDocument()
   })
 })
 
@@ -177,4 +197,3 @@ describe('useNav', () => {
     expect(result.current.user).toBeNull()
   })
 })
-
