@@ -3,12 +3,14 @@ import type { AuthTokensResponseDto } from '@/types/backend'
 const ACCESS_TOKEN_KEY = 'hms_access_token'
 const ACCESS_TOKEN_EXPIRES_AT_KEY = 'hms_access_token_expires_at'
 const USER_EMAIL_KEY = 'hms_user_email'
+const USER_FULL_NAME_KEY = 'hms_user_full_name'
 const USER_ID_KEY = 'hms_user_id'
 const USER_ROLE_KEY = 'hms_user_role'
 const AUTH_STORAGE_KEYS = [
   ACCESS_TOKEN_KEY,
   ACCESS_TOKEN_EXPIRES_AT_KEY,
   USER_EMAIL_KEY,
+  USER_FULL_NAME_KEY,
   USER_ID_KEY,
   USER_ROLE_KEY,
 ] as const
@@ -25,6 +27,7 @@ type StoredAuthSession = {
   accessToken?: string
   accessTokenExpiresAt?: string
   email?: string
+  fullName?: string
   userId?: string
   role?: string
 }
@@ -73,6 +76,12 @@ function isAdminRole(role: string | number): boolean {
   return role === 2 || String(role).trim().toLowerCase() === 'admin'
 }
 
+function firstNameOf(fullName?: string): string {
+  if (!fullName) return ''
+  const [first = ''] = fullName.trim().split(/\s+/)
+  return first
+}
+
 function emitAuthSessionChange(): void {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new Event(AUTH_SESSION_CHANGE_EVENT))
@@ -100,6 +109,7 @@ function readStoredAuthSession(): StoredAuthSession {
         accessTokenExpiresAt:
           window.sessionStorage.getItem(ACCESS_TOKEN_EXPIRES_AT_KEY) ?? undefined,
         email: window.sessionStorage.getItem(USER_EMAIL_KEY) ?? undefined,
+        fullName: window.sessionStorage.getItem(USER_FULL_NAME_KEY) ?? undefined,
         userId: window.sessionStorage.getItem(USER_ID_KEY) ?? undefined,
         role: window.sessionStorage.getItem(USER_ROLE_KEY) ?? undefined,
       }
@@ -113,6 +123,7 @@ function readStoredAuthSession(): StoredAuthSession {
         accessToken,
         accessTokenExpiresAt: window.localStorage.getItem(ACCESS_TOKEN_EXPIRES_AT_KEY) ?? undefined,
         email: window.localStorage.getItem(USER_EMAIL_KEY) ?? undefined,
+        fullName: window.localStorage.getItem(USER_FULL_NAME_KEY) ?? undefined,
         userId: window.localStorage.getItem(USER_ID_KEY) ?? undefined,
         role: window.localStorage.getItem(USER_ROLE_KEY) ?? undefined,
       }
@@ -178,6 +189,7 @@ export function setAuthSession(
     storage.setItem(ACCESS_TOKEN_EXPIRES_AT_KEY, tokens.accessTokenExpiresAt)
     storage.setItem(USER_ID_KEY, tokens.userId)
     storage.setItem(USER_EMAIL_KEY, tokens.email)
+    storage.setItem(USER_FULL_NAME_KEY, firstNameOf(tokens.fullName))
     storage.setItem(USER_ROLE_KEY, String(tokens.role))
   }
 
@@ -216,6 +228,11 @@ export function getStoredRole(): number | undefined {
 export function getStoredEmail(): string | undefined {
   const email = getValidatedStoredAuthSession().email
   return email && email.trim() ? email : undefined
+}
+
+export function getStoredFullName(): string | undefined {
+  const fullName = getValidatedStoredAuthSession().fullName
+  return fullName && fullName.trim() ? fullName : undefined
 }
 
 export function getStoredUserId(): string | undefined {
