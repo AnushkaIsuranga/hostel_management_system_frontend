@@ -145,7 +145,7 @@ export default function OnboardingPage() {
         sessionStorage.removeItem('signup_partial')
       } catch {}
 
-      setAuthSession(tokens)
+      setAuthSession(tokens, { persistent: true })
 
       await StudentPreferencesApi.upsertMe(buildStudentPreferencesPayload(), tokens.accessToken)
 

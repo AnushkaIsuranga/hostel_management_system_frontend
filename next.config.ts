@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'hostelstagingbucket.s3.amazonaws.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       toRemotePattern(process.env.BACKEND_URL),
       toRemotePattern(process.env.NEXT_PUBLIC_ASSET_BASE_URL),
       toRemotePattern(process.env.NEXT_PUBLIC_STORAGE_BASE_URL),

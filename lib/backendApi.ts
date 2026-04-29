@@ -1,8 +1,9 @@
-import type {
-  AmenityCreateDto,
-  AmenityReadDto,
-  AuthTokensResponseDto,
-  HostelAmenityCreateDto,
+import {
+  ApiUserRole,
+  type AmenityCreateDto,
+  type AmenityReadDto,
+  type AuthTokensResponseDto,
+  type HostelAmenityCreateDto,
   HostelAmenityReadDto,
   HostelCreateDto,
   HostelImageReadDto,
@@ -34,10 +35,11 @@ import type {
   UsersStatsDto,
   UserUpdateDto,
 } from '@/types/backend'
-import { getAccessToken } from '@/lib/auth'
+import { clearAuthSession, getAccessToken, setAuthSession } from '@/lib/auth'
 
 const DEFAULT_SERVER_API_BASE_URL = 'http://localhost:5134/api'
 const DEFAULT_BROWSER_API_BASE_URL = '/api'
+const AUTH_PATHS = new Set(['/auth/login', '/auth/register', '/auth/logout', '/auth/refresh'])
 
 function normalizeAssetBaseUrl(raw: string): string {
   return raw.trim().replace(/\/+$/, '')
@@ -130,6 +132,55 @@ export class ApiError extends Error {
 type ApiInit = Omit<RequestInit, 'body'> & {
   json?: unknown
   accessToken?: string
+  skipAuthRefresh?: boolean
+}
+
+function serializeRegisterRole(role: UserRegisterDto['role']): UserRegisterDto['role'] {
+  if (role === undefined || role === null) return role
+  if (role === ApiUserRole.Student || String(role) === String(ApiUserRole.Student)) {
+    return 'Student'
+  }
+  if (role === ApiUserRole.Owner || String(role) === String(ApiUserRole.Owner)) {
+    return 'Owner'
+  }
+  if (role === ApiUserRole.Admin || String(role) === String(ApiUserRole.Admin)) {
+    return 'Admin'
+  }
+  return role
+}
+
+function serializeRegisterDto(dto: UserRegisterDto): UserRegisterDto {
+  return {
+    ...dto,
+    role: serializeRegisterRole(dto.role),
+  }
+}
+
+let refreshPromise: Promise<AuthTokensResponseDto | null> | null = null
+
+async function refreshAuthSession(): Promise<AuthTokensResponseDto | null> {
+  if (refreshPromise) {
+    return refreshPromise
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const tokens = await apiRequest<AuthTokensResponseDto>('/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        skipAuthRefresh: true,
+      })
+      setAuthSession(tokens)
+      return tokens
+    } catch {
+      clearAuthSession()
+      return null
+    } finally {
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
 }
 
 async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
@@ -144,7 +195,7 @@ async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
     headers.set('Content-Type', 'application/json')
   }
   const token = init?.accessToken ?? getAccessToken()
-  if (token) {
+  if (token && !AUTH_PATHS.has(normalizedPath)) {
     headers.set('Authorization', `Bearer ${token}`)
   }
 
@@ -164,6 +215,17 @@ async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
   const payload: unknown = isJson
     ? await res.json().catch(() => null)
     : await res.text().catch(() => null)
+
+  if (res.status === 401 && !init?.skipAuthRefresh && !AUTH_PATHS.has(normalizedPath)) {
+    const refreshedTokens = await refreshAuthSession()
+    if (refreshedTokens?.accessToken) {
+      return apiRequest<T>(path, {
+        ...init,
+        accessToken: refreshedTokens.accessToken,
+        skipAuthRefresh: true,
+      })
+    }
+  }
 
   if (!res.ok) {
     const problem = (
@@ -190,13 +252,17 @@ export const AuthApi = {
     apiRequest<AuthTokensResponseDto>('/auth/register', {
       method: 'POST',
       credentials: 'include',
-      json: dto,
+      json: serializeRegisterDto(dto),
     }),
-  refresh: () =>
-    apiRequest<AuthTokensResponseDto>('/auth/refresh', {
+  refresh: async () => {
+    const tokens = await apiRequest<AuthTokensResponseDto>('/auth/refresh', {
       method: 'POST',
       credentials: 'include',
-    }),
+      skipAuthRefresh: true,
+    })
+    setAuthSession(tokens)
+    return tokens
+  },
   logout: () =>
     apiRequest<void>('/auth/logout', {
       method: 'POST',

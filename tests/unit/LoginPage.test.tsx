@@ -8,10 +8,10 @@ const replaceMock = jest.fn()
 const loginMock = jest.fn()
 const setAuthSessionMock = jest.fn()
 
-jest.mock('next/link', () => require('./helpers/nextMocks').nextLinkModule)
+jest.mock('next/link', () => jest.requireActual('../helpers/nextMocks').nextLinkModule)
 
 jest.mock('next/navigation', () =>
-  require('./helpers/navigationMocks').createNextNavigationModule({
+  jest.requireActual('../helpers/navigationMocks').createNextNavigationModule({
     useRouter: () => ({ replace: replaceMock }),
   }),
 )
@@ -59,7 +59,7 @@ describe('LoginPage', () => {
       })
     })
 
-    expect(setAuthSessionMock).toHaveBeenCalledWith(baseTokens)
+    expect(setAuthSessionMock).toHaveBeenCalledWith(baseTokens, { persistent: true })
     expect(replaceMock).toHaveBeenCalledWith('/hostels')
   })
 
@@ -73,7 +73,26 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
     await waitFor(() => {
+      expect(setAuthSessionMock).toHaveBeenCalledWith(
+        expect.objectContaining({ role: ApiUserRole.Admin }),
+        { persistent: false },
+      )
       expect(replaceMock).toHaveBeenCalledWith('/admin')
+    })
+  })
+
+  it('stores a session-only login when remember me is unchecked', async () => {
+    loginMock.mockResolvedValue(baseTokens)
+
+    render(<LoginPage />)
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'user@example.com' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Pass123!' } })
+    fireEvent.click(screen.getByLabelText('Remember me'))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    await waitFor(() => {
+      expect(setAuthSessionMock).toHaveBeenCalledWith(baseTokens, { persistent: false })
     })
   })
 
@@ -107,4 +126,3 @@ describe('LoginPage', () => {
     })
   })
 })
-

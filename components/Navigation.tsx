@@ -5,7 +5,14 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
 import type { NavItem, NavProps, User, UserRole } from '../types'
-import { getAccessToken, getStoredEmail, getStoredRole, getStoredUserId } from '@/lib/auth'
+import {
+  AUTH_SESSION_CHANGE_EVENT,
+  getAccessToken,
+  getStoredEmail,
+  getStoredFullName,
+  getStoredRole,
+  getStoredUserId,
+} from '@/lib/auth'
 
 const defaultUser: User = {
   id: 'guest-1',
@@ -39,6 +46,36 @@ const userMenuItems: Record<UserRole, NavItem[]> = {
   guest: [],
 }
 
+function firstNameOf(fullName?: string): string {
+  if (!fullName) return ''
+  const [first = ''] = fullName.trim().split(/\s+/)
+  return first
+}
+
+function buildStoredUser(): User {
+  const token = getAccessToken()
+  if (!token) return defaultUser
+
+  const roleNum = getStoredRole()
+  const role: UserRole =
+    roleNum === 2 ? 'admin' : roleNum === 1 ? 'hostel_owner' : roleNum === 0 ? 'student' : 'guest'
+  if (!isAuthenticatedRole(role)) return defaultUser
+
+  const email = getStoredEmail()
+  const fullName = getStoredFullName()
+  const userId = getStoredUserId()
+  if (!email || !userId) return defaultUser
+  const name = firstNameOf(fullName) || email
+
+  return {
+    ...defaultUser,
+    id: userId,
+    name,
+    email,
+    role,
+  }
+}
+
 export default function Navigation({
   currentUser,
   onLogin,
@@ -48,28 +85,7 @@ export default function Navigation({
   showUserMenu = true,
 }: NavProps) {
   const router = useRouter()
-  const [internalUser, setInternalUser] = useState<User>(() => {
-    const token = getAccessToken()
-    if (!token) return defaultUser
-
-    const roleNum = getStoredRole()
-    const role: UserRole =
-      roleNum === 2 ? 'admin' : roleNum === 1 ? 'hostel_owner' : roleNum === 0 ? 'student' : 'guest'
-    if (!isAuthenticatedRole(role)) return defaultUser
-
-    const email = getStoredEmail()
-    const userId = getStoredUserId()
-    if (!email || !userId) return defaultUser
-    const name = email.includes('@') ? email.split('@')[0] : email
-
-    return {
-      ...defaultUser,
-      id: userId,
-      name,
-      email,
-      role,
-    }
-  })
+  const [internalUser, setInternalUser] = useState<User>(() => buildStoredUser())
 
   const effectiveUser = currentUser ?? internalUser
 
@@ -111,6 +127,19 @@ export default function Navigation({
   }, [])
 
   useEffect(() => {
+    const syncStoredUser = () => setInternalUser(buildStoredUser())
+
+    syncStoredUser()
+    window.addEventListener('focus', syncStoredUser)
+    window.addEventListener(AUTH_SESSION_CHANGE_EVENT, syncStoredUser)
+
+    return () => {
+      window.removeEventListener('focus', syncStoredUser)
+      window.removeEventListener(AUTH_SESSION_CHANGE_EVENT, syncStoredUser)
+    }
+  }, [pathname])
+
+  useEffect(() => {
     // Close mobile menu on route change
     const t = setTimeout(() => {
       setIsMenuOpen(false)
@@ -132,12 +161,8 @@ export default function Navigation({
         : '/user'
 
   const getInitials = (name: string): string => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
+    const trimmed = name.trim()
+    return trimmed ? trimmed.charAt(0).toUpperCase() : 'G'
   }
 
   const getRoleColor = (role: UserRole): string => {
